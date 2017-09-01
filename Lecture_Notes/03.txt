@@ -1,0 +1,28 @@
+Binary Adder
+------------
+Sum of A and B
+	Sum bit S = A XOR B
+	Carry bit C = A AND B
+
+Binary Conversion
+-----------------
+Find largest power of 2 that is <= number and subtract. Iterate until number = 0
+
+Hexadecimal Representation
+--------------------------
+Form 4 bit groups from binary. Represent each group by corresponding hex value.
+0 - 16 are 0 - 9 and A - F
+Preceded by 0x to convey hexadecimal representation
+
+Machine Words
+-------------
+Word size - nominal size of integer-valued data
+16 bits - word (w)
+32 bits - long word (l)
+64 bits - quad word (q)
+Address location - address of first byte in word
+
+DeMorgan's Laws
+---------------
+A & B = ~(~A | ~B)
+A | B = ~(~A & ~B)
