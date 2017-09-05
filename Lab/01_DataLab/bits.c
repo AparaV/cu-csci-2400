@@ -171,10 +171,10 @@ NOTES:
  *   Rating: 1
  */
 int evenBits(void) {
-  int constant = 0x55;
-  int result = (constant << 8) | constant;
-  result = (result << 16) | result;
-  return result;
+    int constant = 0x55;
+    int result = (constant << 8) | constant;
+    result = (result << 16) | result;
+    return result;
 }
 /*
  * minusOne - return a value of -1
@@ -183,7 +183,7 @@ int evenBits(void) {
  *   Rating: 1
  */
 int minusOne(void) {
-  return 2;
+    return ~0;
 }
 /*
  * copyLSB - set all bits of result to least significant bit of x
