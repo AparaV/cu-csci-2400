@@ -171,7 +171,10 @@ NOTES:
  *   Rating: 1
  */
 int evenBits(void) {
-  return 2;
+  int constant = 0x55;
+  int result = (constant << 8) | constant;
+  result = (result << 16) | result;
+  return result;
 }
 /*
  * minusOne - return a value of -1
