@@ -193,7 +193,9 @@ int minusOne(void) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-  return 2;
+    int LSB = x & 0x1;
+    LSB = (LSB << 31) >> 31;
+    return LSB;
 }
 /*
  * divpwr2 - Compute x/(2^n), for 0 <= n <= 30
