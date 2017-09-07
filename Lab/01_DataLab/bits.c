@@ -207,7 +207,17 @@ int copyLSB(int x) {
  *   Rating: 2
  */
 int divpwr2(int x, int n) {
-   return 2;
+    /* First check if number is positive or negative by extracting MSB
+     * Then create a mask for 2^n - 1
+     * Use this mask to calculate the remainder when divided by 2^n
+     * If x < 0 and rem > 0, shift the remainder left to prevent losing it during the right shift
+     * Finally shifting right will yield the required answer
+     */
+    int MSB = (x >> 31) & 1; // Positive (0) or negative (-1)
+    int mask = (1 << n) + ~0; // 2^n - 1
+    int rem = x & mask; // Remainder when divided by 2^n
+    x = x + ((MSB & !!rem) << n);
+    return (x >> n);
 }
 /*
  * getByte - Extract byte n from word x
@@ -218,7 +228,12 @@ int divpwr2(int x, int n) {
  *   Rating: 2
  */
 int getByte(int x, int n) {
-	return 2;
+    /* Shift right by n * 8 bits (n * 2^3 bits) to put the required byte at least significant position
+     * Mask other bits and extract first byte
+     */
+    int result = x >> (n << 3);
+    result = result & 0xff;
+    return result;
 }
 /*
  * anyOddBit - return 1 if any odd-numbered bit in word set to 1
@@ -228,7 +243,13 @@ int getByte(int x, int n) {
  *   Rating: 2
  */
 int anyOddBit(int x) {
-   return 2;
+    /* Get the required mask for 1 in odd-numbered bit positions
+     * Mask the number and return the boolean value of that
+     */
+    int mask = (0xaa << 8) | 0xaa;
+    mask = (mask << 16) | mask;
+    int result = (x & mask);
+    return !!result;
 }
 /*
  * isNegative - return 1 if x < 0, return 0 otherwise
