@@ -171,8 +171,8 @@ NOTES:
  *   Rating: 1
  */
 int evenBits(void) {
-    int constant = 0x55;
-    int result = (constant << 8) | constant;
+    int constant = 0x55; // This is 01010101
+    int result = (constant << 8) | constant; // Simply repeat this for 32 bits
     result = (result << 16) | result;
     return result;
 }
@@ -183,6 +183,7 @@ int evenBits(void) {
  *   Rating: 1
  */
 int minusOne(void) {
+    // ~0 = 0xffffffff = -1 in two's complement notation
     return ~0;
 }
 /*
@@ -193,8 +194,8 @@ int minusOne(void) {
  *   Rating: 2
  */
 int copyLSB(int x) {
-    int LSB = x & 0x1;
-    LSB = (LSB << 31) >> 31;
+    int LSB = x & 0x1; // Get the last bit by masking all other bits
+    LSB = (LSB << 31) >> 31; // Shift it left and make it the MSB. Then arithmetic right shift to repeat it
     return LSB;
 }
 /*
