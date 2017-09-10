@@ -248,8 +248,8 @@ int anyOddBit(int x) {
      */
     int mask = (0xaa << 8) | 0xaa;
     mask = (mask << 16) | mask;
-    int result = (x & mask);
-    return !!result;
+    x = (x & mask);
+    return !!x;
 }
 /*
  * isNegative - return 1 if x < 0, return 0 otherwise
@@ -288,7 +288,14 @@ int isAsciiDigit(int x) {
  *   Rating: 3
  */
 int fitsBits(int x, int n) {
-  return 2;
+    /* Create a mask with the sign of x.
+     * Use this to extract the highest bit in x
+     * Shift it right by (n - 1) to yield either 0 or a number.
+     */
+    int mask = x >> 31;
+    int MSB = (~x & mask) + (x & ~mask);
+    int result = !(MSB >> (n + ~0));
+    return result;
 }
 /*
  * subOK - Determine if can compute x-y without overflow
@@ -309,7 +316,15 @@ int subOK(int x, int y) {
  *   Rating: 3
  */
 int conditional(int x, int y, int z) {
-  return 2;
+    /* Convert x into a logical value
+     * Shift left and arithmetic shift right to repeat the logical value
+     * Mask y and z with the new proposition and its complement respectively
+     * One will generate the value and the other will generate 0
+     * Add them to generate solution
+     */
+    int proposition = ((!!x) << 31) >> 31; //  0xffffffff if true, 0x00000000 if false
+    int result = (proposition & y) + (~proposition & z);
+    return result;
 }
 /* howManyBits - return the minimum number of bits required to represent x in
  *             two's complement
