@@ -276,7 +276,15 @@ int isNegative(int x) {
  *   Rating: 3
  */
 int isAsciiDigit(int x) {
- return 2;
+    /* Extract hex1 (least significant 4 bits)
+     * If hex1 > 9, hex1 + 6 will overflow into bit 5. Catch this.
+     * Right shift to lose hex1. The new number should be equal to 3.
+     */
+    int hex1 = 0xf & x;
+    int byte1 = !(0xf0 & (hex1 + 6)); // a + 6 overflows into bit 5 when a >= 10
+    int hex2 = x >> 4; // Right shifting to lost hex1
+    int byte2 = !(hex2 + (~0x3) + 1); // 1 if hex2 = 0101
+    return (byte1 & byte2);
 }
 /*
  * fitsBits - return 1 if x can be represented as an
@@ -361,9 +369,6 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 int isNonZero(int x) {
-    int y = ~x; // 0xffffffff if x = 0
-    y = y + 1; // 0 if x = 0
-
   return 2;
 }
 /*
