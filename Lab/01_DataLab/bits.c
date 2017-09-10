@@ -306,7 +306,18 @@ int fitsBits(int x, int n) {
  *   Rating: 3
  */
 int subOK(int x, int y) {
- return 2;
+    /* Get x - y. Get signs of x, -y, and x - y
+     * If x > 0 and -y > 0 and (x-y) <= 0, overflow
+     * If x < 0 and -y < 0 and (x-y) >= 0, overflows
+     */
+    int sub = x + ~y + 1;
+    int signX = !(x >> 31); // 1 if positive of 0
+    int signMinusY = !!(y >> 31); //1 if positive or 0
+    int signSub = !(sub >> 31); // 1 if positive or 0, 0 if negative
+    int bothPos = (signX & signMinusY); // 1 if both positive
+    int bothNeg = (!signX & !signMinusY); // 1 if both negative
+    int result = (bothPos & !signSub) | (bothNeg & signSub);
+    return !result;
 }
 /*
  * conditional - same as x ? y : z
@@ -350,6 +361,9 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 int isNonZero(int x) {
+    int y = ~x; // 0xffffffff if x = 0
+    y = y + 1; // 0 if x = 0
+
   return 2;
 }
 /*
