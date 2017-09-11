@@ -369,7 +369,13 @@ int howManyBits(int x) {
  *   Rating: 4
  */
 int isNonZero(int x) {
-  return 2;
+    /* Get the y = -|x|. This will have 1 in the sign bit for nonzero values
+     * Shift the sign bit to the first bit and mask the rest.
+     */
+    int isPos = ~(x >> 31);
+    int negative = (isPos & (~x + 1)) + (~isPos & x);
+    int result = 1 & (negative >> 31);
+    return result;
 }
 /*
  * absVal - absolute value of x
@@ -380,7 +386,12 @@ int isNonZero(int x) {
  *   Rating: 4
  */
 int absVal(int x) {
-  return 2;
+    /* Create a mask with the sign of the number.
+     * Use the mask and the negation of the mask to get the absolute value.
+     */
+    int isNeg = (x >> 31);
+    int absolute = (isNeg & (~x + 1)) + (~isNeg & x);
+    return absolute;
 }
 /*
  * isPower2 - returns 1 if x is a power of 2, and 0 otherwise
