@@ -402,5 +402,14 @@ int absVal(int x) {
  *   Rating: 4
  */
 int isPower2(int x) {
-  return 2;
+    /* Convert 0 to 3 and 0x80000000 to 0x80000001
+     * -x & x will yield x only for powers of 2 (i.e., have one or fewer 1's)
+     * Subtract x from that and you will get 0 only for powers of 2
+     */
+    int TMin = x + ~(1 << 31) + 1;
+    int notX = !x;
+    int y = x + ((notX & 1) << 1) + (notX & 1) + (!TMin & 1); // Adds another bit to 0 and 0x80000000
+    int temp = (~y + 1) & y;
+    int result = !(temp + ~y + 1);
+    return result;
 }
