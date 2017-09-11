@@ -358,7 +358,34 @@ int conditional(int x, int y, int z) {
  *  Rating: 4
  */
 int howManyBits(int x) {
-    return 2;
+    /* This is a variant of finding log2(x)
+     * The procedure is explained in the comments
+     */
+
+    // First convert negative and positive numbers into a common format (get rid of the sign bit)
+    int bit16, bit8, bit4, bit2, bit1, result;
+    int sign = x >> 31;
+    int xPrime = sign ^ x;
+
+    int mask = (!!xPrime << 31) >> 31; // 0xffffffff for all nonzero values. 0 for 0 and -1
+    int zero = !xPrime; // 1 for 0 and -1
+
+    // See what happens when shifted by powers of 2. If resulting number is 0, skip ahead.
+    // Otherwise shift by that amount and store that amount for final calculation
+    bit16 = !!(xPrime >> 16) << 4; // either 0 or 16
+    xPrime = xPrime >> bit16;
+    bit8 = !!(xPrime >> 8) << 3; // either 0 or 8
+    xPrime = xPrime >> bit8;
+    bit4 = !!(xPrime >> 4) << 2; // either 0 or 4
+    xPrime = xPrime >> bit4;
+    bit2 = !!(xPrime >> 2) << 1; // either 0 or 2
+    xPrime = xPrime >> bit2;
+    bit1 = !!(xPrime >> 1); // either 0 or 1
+
+    // Add all the stored amounts. Add a bias of 2 because we lost the sign bit initially.
+    // Now use the masks to identify zero (and -1) and nonzero values
+    result = bit16 + bit8 + bit4 + bit2 + bit1 + 2;
+    return (zero | (result & mask));
 }
 /*
  * isNonZero - Check whether x is nonzero using
