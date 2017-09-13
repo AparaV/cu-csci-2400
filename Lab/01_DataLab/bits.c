@@ -1,7 +1,8 @@
 /*
  * CS:APP Data Lab
  *
- * <Please put your name and userid here>
+ * Name: APARAJITHAN VENKATESWARAN
+ * ID  : apve4733
  *
  * bits.c - Source file with your solutions to the Lab.
  *          This is the file you will hand in to your instructor.
@@ -208,15 +209,12 @@ int copyLSB(int x) {
  */
 int divpwr2(int x, int n) {
     /* First check if number is positive or negative by extracting MSB
-     * Then create a mask for 2^n - 1
-     * Use this mask to calculate the remainder when divided by 2^n
-     * If x < 0 and rem > 0, shift the remainder left to prevent losing it during the right shift
-     * Finally shifting right will yield the required answer
+     * Then create a bias of 2^n - 1 and mask it with the sign. So bias becomes 0 for positive numbers
+     * Add the bias to x and right shift the new number
      */
-    int MSB = (x >> 31) & 1; // Positive (0) or negative (-1)
-    int mask = (1 << n) + ~0; // 2^n - 1
-    int rem = x & mask; // Remainder when divided by 2^n
-    x = x + ((MSB & !!rem) << n);
+    int mask = x >> 31; // Positive (0x00000000) or negative (0xffffffff)
+    int bias = mask & ((1 << n) + ~0); // Positive (0) or negative (2^n - 1)
+    x = x + bias;
     return (x >> n);
 }
 /*
