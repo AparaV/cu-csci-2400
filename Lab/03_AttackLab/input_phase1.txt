@@ -1,6 +1,6 @@
-33 33 33 33 33 33 33 33    /* Padding               */
-33 33 33 33 33 33 33 33    /* Padding               */
-33 33 33 33 33 33 33 33    /* Padding               */
-33 33 33 33 33 33 33 33    /* Padding               */
-33 33 33 33 33 33 33 33    /* Padding               */
-90 18 40 00                /* Return to touch1      */
+33 33 33 33 33 33 33 33    /* 00: Padding 8 bytes      */
+33 33 33 33 33 33 33 33    /* 08: Padding 8 bytes      */
+33 33 33 33 33 33 33 33    /* 16: Padding 8 bytes      */
+33 33 33 33 33 33 33 33    /* 24: Padding 8 bytes      */
+33 33 33 33 33 33 33 33    /* 32: Padding 8 bytes      */
+90 18 40 00                /* 40: Return to touch1     */
