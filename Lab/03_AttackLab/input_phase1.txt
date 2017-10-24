@@ -3,4 +3,4 @@
 33 33 33 33 33 33 33 33    /* 16: Padding 8 bytes      */
 33 33 33 33 33 33 33 33    /* 24: Padding 8 bytes      */
 33 33 33 33 33 33 33 33    /* 32: Padding 8 bytes      */
-90 18 40 00                /* 40: Return to touch1     */
+90 18 40 00 00 00 00 00    /* 40: Return to touch1     */
