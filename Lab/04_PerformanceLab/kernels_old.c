@@ -41,72 +41,76 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  * flip - Your current working version of flip
  * IMPORTANT: This is the version you will be graded on
  */
- char flip_descr[] = "flip: Current working version";
- void flip(int dim, pixel *src, pixel *dst)
- {
- 	int i, j;
- 	int ni = 0; // offset from starting point
- 	int dimD = dim - 1;
-    // Loop unrolling
- 	for (i = 0; i < dim; ++i) {
- 		pixel *newSrc = src + ni; // set pointer to corresponding row
- 		pixel *newDst = dst + ni + dimD; // set pointer to last element of row
- 		// Loop unrolling
- 		for (j = 0; j < dim; j+=4) {
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // go to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 		}
- 		ni += dim; // set offset to next row
- 	}
- }
+char flip_descr[] = "flip: Current working version";
+void flip(int dim, pixel *src, pixel *dst)
+{
+	int i, j;
+	int ni = 0; // offset from starting point
+	int dimD = dim - 1;
+	for (i = 0; i < dim; i++) {
+		pixel *newSrc = src + ni; // set pointer to corresponding row
+		pixel *newDst = dst + ni + dimD; // set pointer to last element of row
+		// Loop unrolling
+		for (j = 0; j < dim; j+=4) {
+			(*newDst).red = (*newSrc).red;
+			(*newDst).green = (*newSrc).green;
+			(*newDst).blue = (*newSrc).blue;
+			newSrc++; // go to next element in row
+			newDst--; // go to previous element in row
+			(*newDst).red = (*newSrc).red;
+			(*newDst).green = (*newSrc).green;
+			(*newDst).blue = (*newSrc).blue;
+			newSrc++; // go to next element in row
+			newDst--; // got to previous element in row
+			(*newDst).red = (*newSrc).red;
+			(*newDst).green = (*newSrc).green;
+			(*newDst).blue = (*newSrc).blue;
+			newSrc++; // go to next element in row
+			newDst--; // got to previous element in row
+			(*newDst).red = (*newSrc).red;
+			(*newDst).green = (*newSrc).green;
+			(*newDst).blue = (*newSrc).blue;
+			newSrc++; // go to next element in row
+			newDst--; // got to previous element in row
+		}
+		ni += dim; // set offset to next row
+	}
+}
 
- // Loop unrolling
- char flip_descr_loopUnroll[] = "flip: Loop unrolling";
- void flip_loopUnroll(int dim, pixel *src, pixel *dst)
- {
-     int i, j;
-  	int ni = 0; // offset from starting point
-  	int dimD = dim - 1;
-     // Loop unrolling
-  	for (i = 0; i < dim; i++) {
-  		pixel *newSrc = src + ni; // set pointer to corresponding row
-  		pixel *newDst = dst + ni + dimD; // set pointer to last element of row
-  		// Loop unrolling
-  		for (j = 0; j < dim; j+=4) {
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // go to previous element in row
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // got to previous element in row
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // got to previous element in row
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // got to previous element in row
-  		}
-  		ni += dim; // set offset to next row
-  	}
- }
+// Reducing function calls
+char flip_descr_redFunc[] = "flip: Reducing function calls";
+void flip_redFunc(int dim, pixel *src, pixel *dst)
+{
+	int i, j;
+	for (i = 0; i < dim; i++) {
+		for (j = 0; j < dim; j++) {
+			int currFlip = RIDX_F(i, j, dim);
+			int temp = RIDX(i, j , dim);
+			dst[currFlip].red = src[temp].red;
+			dst[currFlip].green = src[temp].green;
+			dst[currFlip].blue = src[temp].blue;
+		}
+	}
+}
+
+// Reduced pointer arithmetic
+char flip_descr_redPoint[] = "flip: Reducing pointer arithmetic";
+void flip_redPoint(int dim, pixel *src, pixel *dst)
+{
+	int i, j;
+	int ni = 0; // offset from starting point
+	for (i = 0; i < dim; i++) {
+		pixel *newSrc = src + ni; // set pointer to corresponding row
+		for (j = 0; j < dim; j++) {
+			int currFlip = RIDX(i, dim - 1 - j, dim);
+			dst[currFlip].red = (*newSrc).red;
+			dst[currFlip].green = (*newSrc).green;
+			dst[currFlip].blue = (*newSrc).blue;
+			newSrc++; // go to next element in row
+		}
+		ni += dim; // set offset to next row
+	}
+}
 
 /*********************************************************************
  * register_flip_functions - Register all of your different versions
@@ -118,10 +122,11 @@ void naive_flip(int dim, pixel *src, pixel *dst)
 
 void register_flip_functions()
 {
-    add_flip_function(&flip, flip_descr);
+	add_flip_function(&flip, flip_descr);
 	/* ... Register additional test functions here */
 	//add_flip_function(&naive_flip, naive_flip_descr);
-	//add_flip_function(&flip_loopUnroll, flip_descr_loopUnroll);
+	//add_flip_function(&flip_redFunc, flip_descr_redFunc);
+	add_flip_function(&flip_redPoint, flip_descr_redPoint);
 }
 
 
