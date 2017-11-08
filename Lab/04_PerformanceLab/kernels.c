@@ -44,78 +44,85 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  char flip_descr[] = "flip: Current working version";
  void flip(int dim, pixel *src, pixel *dst)
  {
- 	int i, j;
- 	int ni = 0; // offset from starting point
- 	int dimD = dim - 1;
+ 	register int i, j;
+ 	register int ni = 0; // offset from starting point
+ 	register int dimD = dim - 1;
+    register pixel *newSrc1, *newDst1;
     // Loop unrolling
  	for (i = 0; i < dim; i+=4) {
- 		pixel *newSrc = src + ni; // set pointer to corresponding row
- 		pixel *newDst = dst + ni + dimD; // set pointer to last element of row
+ 		newSrc1 = src + ni; // set pointer to corresponding row
+ 		newDst1 = dst + ni + dimD; // set pointer to last element of row
  		// Loop unrolling
  		for (j = 0; j < dim; j+=4) {
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // go to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
  		}
  		ni += dim; // set offset to next row
-        newSrc = src + ni; // set pointer to corresponding row
- 		newDst = dst + ni + dimD; // set pointer to last element of row
-        for (j = 0; j < dim; j+=4) {
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // go to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
+
+        newSrc1 = src + ni; // set pointer to corresponding row
+ 		newDst1 = dst + ni + dimD; // set pointer to last element of row
+ 		// Loop unrolling
+ 		for (j = 0; j < dim; j+=4) {
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
  		}
  		ni += dim; // set offset to next row
-        newSrc = src + ni; // set pointer to corresponding row
- 		newDst = dst + ni + dimD; // set pointer to last element of row
-        for (j = 0; j < dim; j+=4) {
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // go to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
+
+        newSrc1 = src + ni; // set pointer to corresponding row
+ 		newDst1 = dst + ni + dimD; // set pointer to last element of row
+ 		// Loop unrolling
+ 		for (j = 0; j < dim; j+=4) {
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
  		}
  		ni += dim; // set offset to next row
-        newSrc = src + ni; // set pointer to corresponding row
- 		newDst = dst + ni + dimD; // set pointer to last element of row
-        for (j = 0; j < dim; j+=4) {
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // go to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
- 			(*newDst) = (*newSrc);
- 			newSrc++; // go to next element in row
- 			--newDst; // got to previous element in row
+
+        newSrc1 = src + ni; // set pointer to corresponding row
+ 		newDst1 = dst + ni + dimD; // set pointer to last element of row
+ 		// Loop unrolling
+ 		for (j = 0; j < dim; j+=4) {
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
+ 			(*newDst1) = (*newSrc1);
+ 			newSrc1++; // go to next element in row
+ 			--newDst1; // go to previous element in row
  		}
  		ni += dim; // set offset to next row
  	}
