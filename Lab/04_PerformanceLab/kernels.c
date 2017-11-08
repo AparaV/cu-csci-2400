@@ -48,11 +48,62 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  	int ni = 0; // offset from starting point
  	int dimD = dim - 1;
     // Loop unrolling
- 	for (i = 0; i < dim; ++i) {
+ 	for (i = 0; i < dim; i+=4) {
  		pixel *newSrc = src + ni; // set pointer to corresponding row
  		pixel *newDst = dst + ni + dimD; // set pointer to last element of row
  		// Loop unrolling
  		for (j = 0; j < dim; j+=4) {
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // go to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 		}
+ 		ni += dim; // set offset to next row
+        newSrc = src + ni; // set pointer to corresponding row
+ 		newDst = dst + ni + dimD; // set pointer to last element of row
+        for (j = 0; j < dim; j+=4) {
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // go to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 		}
+ 		ni += dim; // set offset to next row
+        newSrc = src + ni; // set pointer to corresponding row
+ 		newDst = dst + ni + dimD; // set pointer to last element of row
+        for (j = 0; j < dim; j+=4) {
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // go to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 			(*newDst) = (*newSrc);
+ 			newSrc++; // go to next element in row
+ 			--newDst; // got to previous element in row
+ 		}
+ 		ni += dim; // set offset to next row
+        newSrc = src + ni; // set pointer to corresponding row
+ 		newDst = dst + ni + dimD; // set pointer to last element of row
+        for (j = 0; j < dim; j+=4) {
  			(*newDst) = (*newSrc);
  			newSrc++; // go to next element in row
  			--newDst; // go to previous element in row
@@ -191,7 +242,54 @@ void naive_convolve(int dim, pixel *src, pixel *dst)
 char convolve_descr[] = "convolve: Current working version";
 void convolve(int dim, pixel *src, pixel *dst)
 {
-    naive_convolve(dim, src, dst);
+    int i, j, ii, jj, curI, curJ;
+    pixel_sum ps;
+
+    int ni = 0;
+    // Permute loops
+    for (i = 0; i < dim; ++i){
+        pixel* newDst = dst + ni;
+        int iSub2 = i - 2;
+        for (j = 0; j < dim; ++j){
+            ps.red    = 0.0;
+            ps.green  = 0.0;
+            ps.blue   = 0.0;
+            ps.weight = 0.0;
+            curI = iSub2;
+            int jSub2 = j - 2;
+            // Permute innermost 2 loops
+            for (ii = 0; ii < 5; ++ii) {
+                // Move this here because j and jj don't affect this
+                //curI = i + ii - 2;
+                if(curI < 0 || curI >= dim) {
+                    ++curI;
+                    continue;
+                }
+                curJ = jSub2;
+                for (jj = 0; jj < 5; ++jj) {
+                    //curJ = j + jj - 2;
+                    if (curJ < 0 || curJ >= dim) {
+                        ++curJ;
+                        continue;
+                    }
+                    int RIDX_temp = RIDX(curI, curJ, dim); // Reduce function call
+                    float kernelWeight = kernel[ii][jj];
+                    ps.red   += src[RIDX_temp].red *   kernelWeight;
+                    ps.green += src[RIDX_temp].green * kernelWeight;
+                    ps.blue  += src[RIDX_temp].blue *  kernelWeight;
+                    ps.weight += kernelWeight;
+                    ++curJ;
+                }
+                ++curI;
+            }
+            //int RIDX_temp = RIDX(i, j, dim); // Reduce function call
+            (*newDst).red   = (unsigned short)(ps.red/ps.weight);
+            (*newDst).green = (unsigned short)(ps.green/ps.weight);
+            (*newDst).blue  = (unsigned short)(ps.blue/ps.weight);
+            newDst++;
+        }
+        ni += dim;
+    }
 }
 
 /*********************************************************************
