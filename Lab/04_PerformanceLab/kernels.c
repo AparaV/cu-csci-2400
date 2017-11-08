@@ -48,6 +48,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  	register int ni = 0; // offset from starting point
  	register int dimD = dim - 1;
     register pixel *newSrc1, *newDst1;
+
     // Loop unrolling
  	for (i = 0; i < dim; i+=4) {
  		newSrc1 = src + ni; // set pointer to corresponding row
@@ -132,7 +133,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  char flip_descr_loopUnroll[] = "flip: Loop unrolling";
  void flip_loopUnroll(int dim, pixel *src, pixel *dst)
  {
-     int i, j;
+    int i, j;
   	int ni = 0; // offset from starting point
   	int dimD = dim - 1;
      // Loop unrolling
@@ -249,50 +250,60 @@ void naive_convolve(int dim, pixel *src, pixel *dst)
 char convolve_descr[] = "convolve: Current working version";
 void convolve(int dim, pixel *src, pixel *dst)
 {
-    int i, j, ii, jj, curI, curJ;
-    pixel_sum ps;
+    register int i, j, ii, jj, curI, curJ;
+    //pixel_sum ps;
+    register float red, green, blue, weight;
+    register pixel* newDst;
 
     int ni = 0;
     // Permute loops
     for (i = 0; i < dim; ++i){
-        pixel* newDst = dst + ni;
+        newDst = dst + ni;
         int iSub2 = i - 2;
         for (j = 0; j < dim; ++j){
-            ps.red    = 0.0;
-            ps.green  = 0.0;
-            ps.blue   = 0.0;
-            ps.weight = 0.0;
+            red    = 0.0;
+            green  = 0.0;
+            blue   = 0.0;
+            weight = 0.0;
             curI = iSub2;
             int jSub2 = j - 2;
+
+            // int nii = 0;
+            // float *kernelNew;
             // Permute innermost 2 loops
             for (ii = 0; ii < 5; ++ii) {
                 // Move this here because j and jj don't affect this
                 //curI = i + ii - 2;
                 if(curI < 0 || curI >= dim) {
+                    // nii += 5;
                     ++curI;
                     continue;
                 }
+                // kernelNew = kernel + nii;
                 curJ = jSub2;
                 for (jj = 0; jj < 5; ++jj) {
                     //curJ = j + jj - 2;
+                    // kernelNew++;
                     if (curJ < 0 || curJ >= dim) {
                         ++curJ;
                         continue;
                     }
                     int RIDX_temp = RIDX(curI, curJ, dim); // Reduce function call
-                    float kernelWeight = kernel[ii][jj];
-                    ps.red   += src[RIDX_temp].red *   kernelWeight;
-                    ps.green += src[RIDX_temp].green * kernelWeight;
-                    ps.blue  += src[RIDX_temp].blue *  kernelWeight;
-                    ps.weight += kernelWeight;
+                    float kernelWeight = kernel[ii][[jj]];
+                    // float kernelWeight = *kernelNew;
+                    red   += src[RIDX_temp].red *   kernelWeight;
+                    green += src[RIDX_temp].green * kernelWeight;
+                    blue  += src[RIDX_temp].blue *  kernelWeight;
+                    weight += kernelWeight;
                     ++curJ;
                 }
+                // nii += 5;
                 ++curI;
             }
             //int RIDX_temp = RIDX(i, j, dim); // Reduce function call
-            (*newDst).red   = (unsigned short)(ps.red/ps.weight);
-            (*newDst).green = (unsigned short)(ps.green/ps.weight);
-            (*newDst).blue  = (unsigned short)(ps.blue/ps.weight);
+            (*newDst).red   = (unsigned short)(red/weight);
+            (*newDst).green = (unsigned short)(green/weight);
+            (*newDst).blue  = (unsigned short)(blue/weight);
             newDst++;
         }
         ni += dim;
