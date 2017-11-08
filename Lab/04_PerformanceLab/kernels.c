@@ -44,88 +44,40 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  char flip_descr[] = "flip: Current working version";
  void flip(int dim, pixel *src, pixel *dst)
  {
- 	register int i, j;
- 	register int ni = 0; // offset from starting point
- 	register int dimD = dim - 1;
-    register pixel *newSrc1, *newDst1;
+ 	int i, j;
+ 	int ni = 0; // offset from first row
+    int li = dim * dim - dim; // offset from last row
+ 	int dimD = dim - 1;
+    register pixel *newSrc1, *newDst1, *lSrc, *lDst;
+    int middle = dim >> 1; // since we are going from top and bottom, only loop until middle
 
-    // Loop unrolling
- 	for (i = 0; i < dim; i+=4) {
- 		newSrc1 = src + ni; // set pointer to corresponding row
- 		newDst1 = dst + ni + dimD; // set pointer to last element of row
+    newSrc1 = src; // initialize to first element
+    lDst = dst + li + dimD; // initialize to last element
+
+ 	for (i = 0; i < middle; ++i) {
+
+ 		newDst1 = dst + ni + dimD; // set dest pointer to last element of row from top
+        lSrc = src + li; // set source pointer to beginning of row from bottom
+
  		// Loop unrolling
  		for (j = 0; j < dim; j+=4) {
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
+            // Swap 4 elements of row from top
+ 			*(newDst1) = *(newSrc1);
+ 			*(newDst1 - 1) = *(newSrc1 + 1);
+ 			*(newDst1 - 2) = *(newSrc1 + 2);
+ 			*(newDst1 - 3) = *(newSrc1 + 3);
+            newDst1 -= 4;
+            newSrc1 += 4; // this automatically updates pointer for next row from top
+            // Swap 4 elements of row from bottom
+ 			*(lDst) = *(lSrc);
+ 			*(lDst - 1) = *(lSrc + 1);
+ 			*(lDst - 2) = *(lSrc + 2);
+ 			*(lDst - 3) = *(lSrc + 3);
+            lDst -= 4; // this automatically updates pointer for next row from bottom
+            lSrc += 4;
  		}
- 		ni += dim; // set offset to next row
-
-        newSrc1 = src + ni; // set pointer to corresponding row
- 		newDst1 = dst + ni + dimD; // set pointer to last element of row
- 		// Loop unrolling
- 		for (j = 0; j < dim; j+=4) {
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 		}
- 		ni += dim; // set offset to next row
-
-        newSrc1 = src + ni; // set pointer to corresponding row
- 		newDst1 = dst + ni + dimD; // set pointer to last element of row
- 		// Loop unrolling
- 		for (j = 0; j < dim; j+=4) {
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 		}
- 		ni += dim; // set offset to next row
-
-        newSrc1 = src + ni; // set pointer to corresponding row
- 		newDst1 = dst + ni + dimD; // set pointer to last element of row
- 		// Loop unrolling
- 		for (j = 0; j < dim; j+=4) {
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 			(*newDst1) = (*newSrc1);
- 			newSrc1++; // go to next element in row
- 			--newDst1; // go to previous element in row
- 		}
- 		ni += dim; // set offset to next row
+        ni += dim;
+        li -= dim;
  	}
  }
 
@@ -289,7 +241,7 @@ void convolve(int dim, pixel *src, pixel *dst)
                         continue;
                     }
                     int RIDX_temp = RIDX(curI, curJ, dim); // Reduce function call
-                    float kernelWeight = kernel[ii][[jj]];
+                    float kernelWeight = kernel[ii][jj];
                     // float kernelWeight = *kernelNew;
                     red   += src[RIDX_temp].red *   kernelWeight;
                     green += src[RIDX_temp].green * kernelWeight;
