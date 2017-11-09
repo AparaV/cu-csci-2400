@@ -44,79 +44,88 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  char flip_descr[] = "flip: Current working version";
  void flip(int dim, pixel *src, pixel *dst)
  {
- 	int i, j;
- 	int ni = 0; // offset from first row
-    int li = dim * dim - dim; // offset from last row
- 	int dimD = dim - 1;
-    register pixel *newSrc1, *newDst1, *lSrc, *lDst;
-    int middle = dim >> 1; // since we are going from top and bottom, only loop until middle
+ 	register int i, j;
+    int dimD = dim - 1;
+    int dim2 = dim << 1; // 2 * dim
+    int dim3 = dim2 + dim; // 3 * dim
+    register pixel *oddSrc, *oddDst, *evenSrc, *evenDst;
 
-    newSrc1 = src; // initialize to first element
-    lDst = dst + li + dimD; // initialize to last element
+    oddSrc = src; // initialize to first element in first row
+    oddDst = dst + dimD; // initialize to last element in first row
+    evenSrc = src + dim; // initialize to first element in second row
+    evenDst = dst + dim + dimD; // initialize to last element in second row
 
- 	for (i = 0; i < middle; ++i) {
-
- 		newDst1 = dst + ni + dimD; // set dest pointer to last element of row from top
-        lSrc = src + li; // set source pointer to beginning of row from bottom
+    // Mirror two consecutive rows simultaneously
+ 	for (i = 0; i < dim; i+=2) {
 
  		// Loop unrolling
  		for (j = 0; j < dim; j+=4) {
-            // Swap 4 elements of row from top
- 			*(newDst1) = *(newSrc1);
- 			*(newDst1 - 1) = *(newSrc1 + 1);
- 			*(newDst1 - 2) = *(newSrc1 + 2);
- 			*(newDst1 - 3) = *(newSrc1 + 3);
-            newDst1 -= 4;
-            newSrc1 += 4; // this automatically updates pointer for next row from top
-            // Swap 4 elements of row from bottom
- 			*(lDst) = *(lSrc);
- 			*(lDst - 1) = *(lSrc + 1);
- 			*(lDst - 2) = *(lSrc + 2);
- 			*(lDst - 3) = *(lSrc + 3);
-            lDst -= 4; // this automatically updates pointer for next row from bottom
-            lSrc += 4;
- 		}
-        ni += dim;
-        li -= dim;
+             
+            // Mirror 4 elements of odd row
+ 			*(oddDst) = *(oddSrc);
+ 			*(oddDst - 1) = *(oddSrc + 1);
+ 			*(oddDst - 2) = *(oddSrc + 2);
+ 			*(oddDst - 3) = *(oddSrc + 3);
+            oddDst -= 4; // this finally goes to previous even row
+            oddSrc += 4; // this finally goes to the next even row
+
+            // Mirror 4 elements of even row
+ 			*(evenDst) = *(evenSrc);
+ 			*(evenDst - 1) = *(evenSrc + 1);
+ 			*(evenDst - 2) = *(evenSrc + 2);
+            *(evenDst - 3) = *(evenSrc + 3);
+            evenDst -= 4; // this finally goes to previous odd row
+            evenSrc += 4; // this finally goes to the next odd row
+        }
+        
+        oddSrc += dim; // set odd src pointer to first element of next odd row
+        oddDst += dim3; // set odd dest pointer to last element of next odd row
+
+        evenSrc += dim; // set even src pointer to first element of next even row
+        evenDst += dim3; // set even dest pointer to last element of next even row
  	}
  }
 
- // Loop unrolling
- char flip_descr_loopUnroll[] = "flip: Loop unrolling";
- void flip_loopUnroll(int dim, pixel *src, pixel *dst)
+ // Going from top and bottom simultaneously
+ char flip_descr_going2Way[] = "flip: Going from top and bottom";
+ void flip_going2Way(int dim, pixel *src, pixel *dst)
  {
     int i, j;
-  	int ni = 0; // offset from starting point
-  	int dimD = dim - 1;
-     // Loop unrolling
-  	for (i = 0; i < dim; i++) {
-  		pixel *newSrc = src + ni; // set pointer to corresponding row
-  		pixel *newDst = dst + ni + dimD; // set pointer to last element of row
-  		// Loop unrolling
-  		for (j = 0; j < dim; j+=4) {
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // go to previous element in row
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // got to previous element in row
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // got to previous element in row
-  			(*newDst).red = (*newSrc).red;
-  			(*newDst).green = (*newSrc).green;
-  			(*newDst).blue = (*newSrc).blue;
-  			newSrc++; // go to next element in row
-  			newDst--; // got to previous element in row
-  		}
-  		ni += dim; // set offset to next row
-  	}
+    int li = dim * dim - dim; // offset from last row
+    int dimD = dim - 1;
+    int dim2 = dim << 1;
+    register pixel *oddSrc, *oddDst, *evenSrc, *evenDst;
+    int middle = dim >> 1; // since we are going from top and bottom, only loop until middle
+
+    oddSrc = src; // initialize to first element in first row
+    oddDst = dst + dimD; // initialize to last element in first row
+    evenSrc = src + li; // initialize to first element in last row
+    evenDst = dst + li + dimD; // initialize to last element in last row
+
+ 	for (i = 0; i < middle; ++i) {
+
+ 		// Loop unrolling
+ 		for (j = 0; j < dim; j+=4) {
+             
+            // Swap 4 elements of row from top
+ 			*(oddDst) = *(oddSrc);
+ 			*(oddDst - 1) = *(oddSrc + 1);
+ 			*(oddDst - 2) = *(oddSrc + 2);
+ 			*(oddDst - 3) = *(oddSrc + 3);
+            oddDst -= 4;
+            oddSrc += 4; // this automatically updates pointer for next row from top
+
+            // Swap 4 elements of row from bottom
+ 			*(evenDst) = *(evenSrc);
+ 			*(evenDst - 1) = *(evenSrc + 1);
+ 			*(evenDst - 2) = *(evenSrc + 2);
+            *(evenDst - 3) = *(evenSrc + 3);
+            evenDst -= 4; // this automatically updates pointer for next row from bottom
+            evenSrc += 4;
+ 		}
+        oddDst += dim2; // set dest pointer to last element of row from top
+        evenSrc -= dim2; // set source pointer to beginning of row from bottom
+ 	}
  }
 
 /*********************************************************************
@@ -129,7 +138,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
 
 void register_flip_functions()
 {
-    add_flip_function(&flip, flip_descr);
+    // add_flip_function(&flip, flip_descr);
 	/* ... Register additional test functions here */
 	//add_flip_function(&naive_flip, naive_flip_descr);
 	//add_flip_function(&flip_loopUnroll, flip_descr_loopUnroll);
@@ -201,6 +210,41 @@ void naive_convolve(int dim, pixel *src, pixel *dst)
  */
 char convolve_descr[] = "convolve: Current working version";
 void convolve(int dim, pixel *src, pixel *dst)
+{
+    int i, j, ii, jj, curI, curJ;
+    pixel_sum ps;
+
+    for (j = 0; j < dim; j++){
+        for (i = 0; i < dim; i++){
+            ps.red    = 0.0;
+            ps.green  = 0.0;
+            ps.blue   = 0.0;
+            ps.weight = 0.0;
+            for (jj = -2; jj <= 2; jj++){
+                for (ii = -2; ii <= 2; ii++){
+                    curJ = j+jj;
+                    if(curJ<0 || curJ>=dim){
+                        continue;
+                    }
+                    curI = i+ii;
+                    if(curI<0 || curI>=dim){
+                        continue;
+                    }
+                    ps.red   += src[RIDX(curI, curJ, dim)].red *   kernel[ii+2][jj+2];
+                    ps.green += src[RIDX(curI, curJ, dim)].green * kernel[ii+2][jj+2];
+                    ps.blue  += src[RIDX(curI, curJ, dim)].blue *  kernel[ii+2][jj+2];
+                    ps.weight += kernel[ii+2][jj+2];
+                }
+            }
+            dst[RIDX(i,j,dim)].red   = (unsigned short)(ps.red/ps.weight);
+            dst[RIDX(i,j,dim)].green = (unsigned short)(ps.green/ps.weight);
+            dst[RIDX(i,j,dim)].blue  = (unsigned short)(ps.blue/ps.weight);
+        }
+    }
+}
+
+char convolve_descr_Shit[] = "convolve: Some shitty changes";
+void convolve_Shit(int dim, pixel *src, pixel *dst)
 {
     register int i, j, ii, jj, curI, curJ;
     //pixel_sum ps;
