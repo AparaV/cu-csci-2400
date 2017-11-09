@@ -62,7 +62,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  		for (j = 0; j < dim; j+=4) {
              
             // Mirror 4 elements of odd row
- 			*(oddDst) = *(oddSrc);
+            *(oddDst) = *(oddSrc);
  			*(oddDst - 1) = *(oddSrc + 1);
  			*(oddDst - 2) = *(oddSrc + 2);
  			*(oddDst - 3) = *(oddSrc + 3);
@@ -70,7 +70,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
             oddSrc += 4; // this finally goes to the next even row
 
             // Mirror 4 elements of even row
- 			*(evenDst) = *(evenSrc);
+            *(evenDst) = *(evenSrc);
  			*(evenDst - 1) = *(evenSrc + 1);
  			*(evenDst - 2) = *(evenSrc + 2);
             *(evenDst - 3) = *(evenSrc + 3);
@@ -83,6 +83,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
 
         evenSrc += dim; // set even src pointer to first element of next even row
         evenDst += dim3; // set even dest pointer to last element of next even row
+
  	}
  }
 
@@ -138,7 +139,7 @@ void naive_flip(int dim, pixel *src, pixel *dst)
 
 void register_flip_functions()
 {
-    // add_flip_function(&flip, flip_descr);
+    add_flip_function(&flip, flip_descr);
 	/* ... Register additional test functions here */
 	//add_flip_function(&naive_flip, naive_flip_descr);
 	//add_flip_function(&flip_loopUnroll, flip_descr_loopUnroll);
@@ -212,34 +213,65 @@ char convolve_descr[] = "convolve: Current working version";
 void convolve(int dim, pixel *src, pixel *dst)
 {
     int i, j, ii, jj, curI, curJ;
-    pixel_sum ps;
+    float red, green, blue, weight; // Use these instead of derefencing pixel_sum each time
+    int outerCounter = 0; // Counter to calculate the offset for dst pointer
 
-    for (j = 0; j < dim; j++){
-        for (i = 0; i < dim; i++){
-            ps.red    = 0.0;
-            ps.green  = 0.0;
-            ps.blue   = 0.0;
-            ps.weight = 0.0;
-            for (jj = -2; jj <= 2; jj++){
-                for (ii = -2; ii <= 2; ii++){
-                    curJ = j+jj;
-                    if(curJ<0 || curJ>=dim){
+    // Permute loops
+    for (i = 0; i < dim; ++i){
+        
+        int iSub3 = i - 3; // Don't compute this each time in the 2 innermost loops
+
+        for (j = 0; j < dim; ++j){
+
+            red    = 0.0;
+            green  = 0.0;
+            blue   = 0.0;
+            weight = 0.0;
+
+            int innerCounter = iSub3 * dim; // Counter to calculate the offset for src pointer
+            int jSub3 = j - 3; // Don't compute this each time in the 2 innermost loops
+            curI = iSub3;
+
+            // Permute loops
+            // Go from 0 to 4 instead of -2 to 2
+            for (ii = 0; ii < 5; ++ii){
+
+                // Moved this out of inner loop because curI don't change there
+                ++curI;
+                innerCounter += dim;
+                if (curI < 0 || curI >= dim) {
+                    continue;
+                }
+
+                curJ = jSub3;
+                float *kernelRow = *(kernel + ii); // Points to the row in question (kernel[ii])
+                
+                // Go from 0 to 4 instead of -2 to 2
+                for (jj = 0; jj < 5; ++jj){
+
+                    ++curJ;
+                    if (curJ < 0 || curJ >= dim) {
                         continue;
                     }
-                    curI = i+ii;
-                    if(curI<0 || curI>=dim){
-                        continue;
-                    }
-                    ps.red   += src[RIDX(curI, curJ, dim)].red *   kernel[ii+2][jj+2];
-                    ps.green += src[RIDX(curI, curJ, dim)].green * kernel[ii+2][jj+2];
-                    ps.blue  += src[RIDX(curI, curJ, dim)].blue *  kernel[ii+2][jj+2];
-                    ps.weight += kernel[ii+2][jj+2];
+
+                    pixel src_curr = *(src + innerCounter + curJ); // Compute src[RDIX(curI, curJ, dim)] only once
+                    float kernelWeight = *(kernelRow + jj); // Get kernel[ii][jj] value only once
+
+                    red   += src_curr.red *   kernelWeight;
+                    green += src_curr.green * kernelWeight;
+                    blue  += src_curr.blue *  kernelWeight;
+                    weight += kernelWeight;
                 }
             }
-            dst[RIDX(i,j,dim)].red   = (unsigned short)(ps.red/ps.weight);
-            dst[RIDX(i,j,dim)].green = (unsigned short)(ps.green/ps.weight);
-            dst[RIDX(i,j,dim)].blue  = (unsigned short)(ps.blue/ps.weight);
+
+            pixel* dst_curr = dst + outerCounter + j; // Compute address of dst[RIDX(i, j, dim)] only once
+            
+            dst_curr->red   = (unsigned short) (red / weight);
+            dst_curr->green = (unsigned short) (green / weight);
+            dst_curr->blue  = (unsigned short) (blue / weight);
         }
+
+        outerCounter += dim;
     }
 }
 
@@ -286,7 +318,7 @@ void convolve_Shit(int dim, pixel *src, pixel *dst)
                     }
                     int RIDX_temp = RIDX(curI, curJ, dim); // Reduce function call
                     float kernelWeight = kernel[ii][jj];
-                    // float kernelWeight = *kernelNew;
+                    // float kernel[ii+2][jj+2] = *kernelNew;
                     red   += src[RIDX_temp].red *   kernelWeight;
                     green += src[RIDX_temp].green * kernelWeight;
                     blue  += src[RIDX_temp].blue *  kernelWeight;
