@@ -46,6 +46,41 @@ void naive_flip(int dim, pixel *src, pixel *dst)
  {
  	register int i, j;
     int dimD = dim - 1;
+    int dim2 = dim << 1;
+    int ni = 0;
+    int ni2 = dim;
+
+    for (i = 0; i < dim; i+=2){
+        int pi = ni + dimD;
+        int pi2 = ni2 + dimD;
+
+        for (j = 0; j < dim; j+=4){
+            int piJ = pi - j;
+            int niJ = ni + j;
+            dst[piJ]   = src[niJ];
+            dst[piJ - 1]   = src[niJ + 1];
+            dst[piJ - 2]   = src[niJ + 2];
+            dst[piJ - 3]   = src[niJ + 3];
+
+            int piJ2 = pi2 - j;
+            int niJ2 = ni2 + j;
+            dst[piJ2]   = src[niJ2];
+            dst[piJ2 - 1]   = src[niJ2 + 1];
+            dst[piJ2 - 2]   = src[niJ2 + 2];
+            dst[piJ2 - 3]   = src[niJ2 + 3];
+        }
+
+        ni += dim2;
+        ni2 += dim2;
+    }
+ }
+
+ // Covering odd and even at the same time simultaneously
+ char flip_descr_going2Way[] = "flip: Covering odd and even";
+ void flip_going2Way(int dim, pixel *src, pixel *dst)
+ {
+    register int i, j;
+    int dimD = dim - 1;
     int dim2 = dim << 1; // 2 * dim
     int dim3 = dim2 + dim; // 3 * dim
     register pixel *oddSrc, *oddDst, *evenSrc, *evenDst;
@@ -84,48 +119,6 @@ void naive_flip(int dim, pixel *src, pixel *dst)
         evenSrc += dim; // set even src pointer to first element of next even row
         evenDst += dim3; // set even dest pointer to last element of next even row
 
- 	}
- }
-
- // Going from top and bottom simultaneously
- char flip_descr_going2Way[] = "flip: Going from top and bottom";
- void flip_going2Way(int dim, pixel *src, pixel *dst)
- {
-    int i, j;
-    int li = dim * dim - dim; // offset from last row
-    int dimD = dim - 1;
-    int dim2 = dim << 1;
-    register pixel *oddSrc, *oddDst, *evenSrc, *evenDst;
-    int middle = dim >> 1; // since we are going from top and bottom, only loop until middle
-
-    oddSrc = src; // initialize to first element in first row
-    oddDst = dst + dimD; // initialize to last element in first row
-    evenSrc = src + li; // initialize to first element in last row
-    evenDst = dst + li + dimD; // initialize to last element in last row
-
- 	for (i = 0; i < middle; ++i) {
-
- 		// Loop unrolling
- 		for (j = 0; j < dim; j+=4) {
-             
-            // Swap 4 elements of row from top
- 			*(oddDst) = *(oddSrc);
- 			*(oddDst - 1) = *(oddSrc + 1);
- 			*(oddDst - 2) = *(oddSrc + 2);
- 			*(oddDst - 3) = *(oddSrc + 3);
-            oddDst -= 4;
-            oddSrc += 4; // this automatically updates pointer for next row from top
-
-            // Swap 4 elements of row from bottom
- 			*(evenDst) = *(evenSrc);
- 			*(evenDst - 1) = *(evenSrc + 1);
- 			*(evenDst - 2) = *(evenSrc + 2);
-            *(evenDst - 3) = *(evenSrc + 3);
-            evenDst -= 4; // this automatically updates pointer for next row from bottom
-            evenSrc += 4;
- 		}
-        oddDst += dim2; // set dest pointer to last element of row from top
-        evenSrc -= dim2; // set source pointer to beginning of row from bottom
  	}
  }
 
@@ -347,7 +340,7 @@ void convolve_Shit(int dim, pixel *src, pixel *dst)
  *********************************************************************/
 
 void register_convolve_functions() {
-    add_convolve_function(&convolve, convolve_descr);
+    // add_convolve_function(&convolve, convolve_descr);
     //add_convolve_function(&naive_convolve, naive_convolve_descr);
     /* ... Register additional test functions here */
 }
