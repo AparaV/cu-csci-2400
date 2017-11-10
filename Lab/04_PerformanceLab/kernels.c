@@ -44,16 +44,17 @@ void naive_flip(int dim, pixel *src, pixel *dst)
 char flip_descr[] = "flip: Current working version";
 void flip(int dim, pixel *src, pixel *dst) 
 {
-    register int i, j, ni = 0;
-    dst = src;
+    register int i, j = 0, ni = dim - 1;
+    int dim2 = dim * dim;
+    for (i = 0; i ^ dim2; ++i) {
 
-    for (i = 0; i < dim; ++i){
+        *(dst + i) = *(src + i + ni - (j << 1));
+        ++j;
 
-        for (j = 0; j < dim / 2; ++j){
-            dst[ni + j] = dst[ni - j];
-        }
-        ni += dim;
+        // if j == dim, j = 0
+        j = (j ^ dim) ? j : 0;
     }
+
 }
 
 char flip_descr2[] = "flip: Odd and even rows";
@@ -88,6 +89,22 @@ void flip2(int dim, pixel *src, pixel *dst)
         ni += dim2;
         ni2 += dim2;
     }
+}
+
+char flip_descr3[] = "flip: One looper";
+void flip3(int dim, pixel *src, pixel *dst) 
+{
+    register int i, j = 0, ni = dim - 1;
+    int dim2 = dim * dim;
+    for (i = 0; i ^ dim2; ++i) {
+
+        *(dst + i) = *(src + i + ni - (j << 1));
+        ++j;
+
+        // if j == dim, j = 0
+        j = (j ^ dim) ? j : 0;
+    }
+
 }
 
 /*********************************************************************
