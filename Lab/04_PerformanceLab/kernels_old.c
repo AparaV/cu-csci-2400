@@ -20,12 +20,12 @@ const team_t team = {
 /******************************************************
  * Your different versions of the flip kernel go here
  ******************************************************/
- 
-/* 
- * naive_flip - The naive baseline version of flip 
+
+/*
+ * naive_flip - The naive baseline version of flip
  */
 char naive_flip_descr[] = "naive_flip: Naive baseline implementation";
-void naive_flip(int dim, pixel *src, pixel *dst) 
+void naive_flip(int dim, pixel *src, pixel *dst)
 {
     int i, j;
     for (i = 0; i < dim; i++){
@@ -37,29 +37,14 @@ void naive_flip(int dim, pixel *src, pixel *dst)
     }
 }
 
-/* 
+/*
  * flip - Your current working version of flip
  * IMPORTANT: This is the version you will be graded on
  */
-char flip_descr[] = "flip: Current working version";
-void flip(int dim, pixel *src, pixel *dst) 
-{
-    register int i, j, ni = 0;
-    dst = src;
-
-    for (i = 0; i < dim; ++i){
-
-        for (j = 0; j < dim / 2; ++j){
-            dst[ni + j] = dst[ni - j];
-        }
-        ni += dim;
-    }
-}
-
-char flip_descr2[] = "flip: Odd and even rows";
-void flip2(int dim, pixel *src, pixel *dst) 
-{
-    register int i, j;
+ char flip_descr[] = "flip: Current working version";
+ void flip(int dim, pixel *src, pixel *dst)
+ {
+ 	register int i, j;
     int dimD = dim - 1;
     int dim2 = dim << 1;
     int ni = 0;
@@ -88,28 +73,76 @@ void flip2(int dim, pixel *src, pixel *dst)
         ni += dim2;
         ni2 += dim2;
     }
-}
+ }
+
+ // Covering odd and even at the same time simultaneously
+ char flip_descr_going2Way[] = "flip: Covering odd and even";
+ void flip_going2Way(int dim, pixel *src, pixel *dst)
+ {
+    register int i, j;
+    int dimD = dim - 1;
+    int dim2 = dim << 1; // 2 * dim
+    int dim3 = dim2 + dim; // 3 * dim
+    register pixel *oddSrc, *oddDst, *evenSrc, *evenDst;
+
+    oddSrc = src; // initialize to first element in first row
+    oddDst = dst + dimD; // initialize to last element in first row
+    evenSrc = src + dim; // initialize to first element in second row
+    evenDst = dst + dim + dimD; // initialize to last element in second row
+
+    // Mirror two consecutive rows simultaneously
+ 	for (i = 0; i < dim; i+=2) {
+
+ 		// Loop unrolling
+ 		for (j = 0; j < dim; j+=4) {
+             
+            // Mirror 4 elements of odd row
+            *(oddDst) = *(oddSrc);
+ 			*(oddDst - 1) = *(oddSrc + 1);
+ 			*(oddDst - 2) = *(oddSrc + 2);
+ 			*(oddDst - 3) = *(oddSrc + 3);
+            oddDst -= 4; // this finally goes to previous even row
+            oddSrc += 4; // this finally goes to the next even row
+
+            // Mirror 4 elements of even row
+            *(evenDst) = *(evenSrc);
+ 			*(evenDst - 1) = *(evenSrc + 1);
+ 			*(evenDst - 2) = *(evenSrc + 2);
+            *(evenDst - 3) = *(evenSrc + 3);
+            evenDst -= 4; // this finally goes to previous odd row
+            evenSrc += 4; // this finally goes to the next odd row
+        }
+        
+        oddSrc += dim; // set odd src pointer to first element of next odd row
+        oddDst += dim3; // set odd dest pointer to last element of next odd row
+
+        evenSrc += dim; // set even src pointer to first element of next even row
+        evenDst += dim3; // set even dest pointer to last element of next even row
+
+ 	}
+ }
 
 /*********************************************************************
  * register_flip_functions - Register all of your different versions
  *     of the flip kernel with the driver by calling the
  *     add_flip_function() for each test function. When you run the
  *     driver program, it will test and report the performance of each
- *     registered test function.  
+ *     registered test function.
  *********************************************************************/
 
-void register_flip_functions() 
+void register_flip_functions()
 {
-    add_flip_function(&flip, flip_descr);   
-    //add_flip_function(&naive_flip, naive_flip_descr);   
-    /* ... Register additional test functions here */
+    // add_flip_function(&flip, flip_descr);
+	/* ... Register additional test functions here */
+	//add_flip_function(&naive_flip, naive_flip_descr);
+	//add_flip_function(&flip_loopUnroll, flip_descr_loopUnroll);
 }
 
 
 /***************
  * CONVOLVE KERNEL
  **************/
- 
+
 /***************************************************************
  * Various typedefs and helper functions for the convolve function
  * You may modify these any way you like.
@@ -128,14 +161,14 @@ typedef struct {
  ******************************************************/
 
 /*
- * naive_convolve - The naive baseline version of convolve 
+ * naive_convolve - The naive baseline version of convolve
  */
 char naive_convolve_descr[] = "naive_convolve: Naive baseline implementation";
-void naive_convolve(int dim, pixel *src, pixel *dst) 
+void naive_convolve(int dim, pixel *src, pixel *dst)
 {
     int i, j, ii, jj, curI, curJ;
     pixel_sum ps;
-    
+
     for (j = 0; j < dim; j++){
         for (i = 0; i < dim; i++){
             ps.red    = 0.0;
@@ -166,61 +199,11 @@ void naive_convolve(int dim, pixel *src, pixel *dst)
 }
 
 /*
- * convolve - Your current working version of convolve. 
+ * convolve - Your current working version of convolve.
  * IMPORTANT: This is the version you will be graded on
  */
-char convolve_descr[] = "convolve: Current working version - gave 2.72";
-void convolve(int dim, pixel *src, pixel *dst) 
-{
-    int i, j, ii, jj, curI, curJ;
-    pixel_sum ps;
-    
-    for (i = 0; i < dim; ++i){
-        for (j = 0; j < dim; ++j){
-            ps.red    = 0.0;
-            ps.green  = 0.0;
-            ps.blue   = 0.0;
-            ps.weight = 0.0;
-            curI = i - 3;
-            for (ii = 0; ii < 5; ++ii){
-
-                ++curI;
-                if(curI < 0) {
-                    continue;
-                }
-                if (curI >= dim) {
-                    break;
-                }
-
-                curJ = j - 3;
-                for (jj = 0; jj < 5; ++jj){
-
-                    ++curJ;
-                    if(curJ < 0) {
-                        continue;
-                    }
-                    if (curJ >= dim) {
-                        break;
-                    }
-
-                    float kernelWeight = kernel[ii][jj];
-                    int index = RIDX(curI, curJ, dim);
-                    ps.red   += src[index].red *   kernelWeight;
-                    ps.green += src[index].green * kernelWeight;
-                    ps.blue  += src[index].blue *  kernelWeight;
-                    ps.weight += kernelWeight;
-                }
-            }
-            int index = RIDX(i, j, dim);
-            dst[index].red   = (unsigned short)(ps.red/ps.weight);
-            dst[index].green = (unsigned short)(ps.green/ps.weight);
-            dst[index].blue  = (unsigned short)(ps.blue/ps.weight);
-        }
-    }
-}
-
-char convolve_descr_Shit[] = "convolve: Some shitty changes that gave 3.18";
-void convolve_Shit(int dim, pixel *src, pixel *dst)
+char convolve_descr[] = "convolve: Current working version";
+void convolve(int dim, pixel *src, pixel *dst)
 {
     int i, j, ii, jj, curI, curJ;
     float red, green, blue, weight; // Use these instead of derefencing pixel_sum each time
@@ -291,17 +274,79 @@ void convolve_Shit(int dim, pixel *src, pixel *dst)
     }
 }
 
-/********************************************************************* 
+char convolve_descr_Shit[] = "convolve: Some shitty changes";
+void convolve_Shit(int dim, pixel *src, pixel *dst)
+{
+    register int i, j, ii, jj, curI, curJ;
+    //pixel_sum ps;
+    register float red, green, blue, weight;
+    register pixel* newDst;
+
+    int ni = 0;
+    // Permute loops
+    for (i = 0; i < dim; ++i){
+        newDst = dst + ni;
+        int iSub2 = i - 2;
+        for (j = 0; j < dim; ++j){
+            red    = 0.0;
+            green  = 0.0;
+            blue   = 0.0;
+            weight = 0.0;
+            curI = iSub2;
+            int jSub2 = j - 2;
+
+            // int nii = 0;
+            // float *kernelNew;
+            // Permute innermost 2 loops
+            for (ii = 0; ii < 5; ++ii) {
+                // Move this here because j and jj don't affect this
+                //curI = i + ii - 2;
+                if(curI < 0 || curI >= dim) {
+                    // nii += 5;
+                    ++curI;
+                    continue;
+                }
+                // kernelNew = kernel + nii;
+                curJ = jSub2;
+                for (jj = 0; jj < 5; ++jj) {
+                    //curJ = j + jj - 2;
+                    // kernelNew++;
+                    if (curJ < 0 || curJ >= dim) {
+                        ++curJ;
+                        continue;
+                    }
+                    int RIDX_temp = RIDX(curI, curJ, dim); // Reduce function call
+                    float kernelWeight = kernel[ii][jj];
+                    // float kernel[ii+2][jj+2] = *kernelNew;
+                    red   += src[RIDX_temp].red *   kernelWeight;
+                    green += src[RIDX_temp].green * kernelWeight;
+                    blue  += src[RIDX_temp].blue *  kernelWeight;
+                    weight += kernelWeight;
+                    ++curJ;
+                }
+                // nii += 5;
+                ++curI;
+            }
+            //int RIDX_temp = RIDX(i, j, dim); // Reduce function call
+            (*newDst).red   = (unsigned short)(red/weight);
+            (*newDst).green = (unsigned short)(green/weight);
+            (*newDst).blue  = (unsigned short)(blue/weight);
+            newDst++;
+        }
+        ni += dim;
+    }
+}
+
+/*********************************************************************
  * register_convolve_functions - Register all of your different versions
  *     of the convolve kernel with the driver by calling the
  *     add_convolve_function() for each test function.  When you run the
  *     driver program, it will test and report the performance of each
- *     registered test function.  
+ *     registered test function.
  *********************************************************************/
 
 void register_convolve_functions() {
-    // add_convolve_function(&convolve, convolve_descr);
+    add_convolve_function(&convolve, convolve_descr);
     //add_convolve_function(&naive_convolve, naive_convolve_descr);
     /* ... Register additional test functions here */
 }
-
