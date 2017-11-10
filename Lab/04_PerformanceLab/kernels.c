@@ -44,15 +44,30 @@ void naive_flip(int dim, pixel *src, pixel *dst)
 char flip_descr[] = "flip: Current working version";
 void flip(int dim, pixel *src, pixel *dst) 
 {
-    register int i, j = 0, ni = dim - 1;
-    int dim2 = dim * dim;
-    for (i = 0; i ^ dim2; ++i) {
+    register int i, j;
+    // int dimD = dim - 1;
+    // int dim2 = dim << 1;
+    register int ni = 0, pi = dim - 1;
+    // int ni2 = dim;
 
-        *(dst + i) = *(src + i + ni - (j << 1));
-        ++j;
+    for (i = 0; i < dim; ++i){
+        // int pi2 = ni2 + dimD;
 
-        // if j == dim, j = 0
-        j = (j ^ dim) ? j : 0;
+        for (j = 0; j < dim; j+=4){
+            dst[pi - j]   = src[ni + j];
+            dst[pi - j - 1]   = src[ni + j + 1];
+            dst[pi - j - 2]   = src[ni + j + 2];
+            dst[pi - j - 3]   = src[ni + j + 3];
+
+            // dst[pi2 - j]   = src[ni2 + j];
+            // dst[pi2 - j - 1]   = src[ni2 + j + 1];
+            // dst[pi2 - j - 2]   = src[ni2 + j + 2];
+            // dst[pi2 - j - 3]   = src[ni2 + j + 3];
+        }
+
+        ni += dim;
+        pi += dim;
+        // ni2 += dim2;
     }
 
 }
@@ -66,11 +81,11 @@ void flip2(int dim, pixel *src, pixel *dst)
     int ni = 0;
     int ni2 = dim;
 
-    for (i = 0; i < dim; i+=2){
+    for (i = 0; i ^ dim; i+=2){
         int pi = ni + dimD;
         int pi2 = ni2 + dimD;
 
-        for (j = 0; j < dim; j+=4){
+        for (j = 0; j ^ dim; j+=4){
             int piJ = pi - j;
             int niJ = ni + j;
             dst[piJ]   = src[niJ];
@@ -117,9 +132,11 @@ void flip3(int dim, pixel *src, pixel *dst)
 
 void register_flip_functions() 
 {
-    add_flip_function(&flip, flip_descr);   
+    // add_flip_function(&flip, flip_descr);
     //add_flip_function(&naive_flip, naive_flip_descr);   
     /* ... Register additional test functions here */
+    // add_flip_function(&flip2, flip_descr2);
+    // add_flip_function(&flip3, flip_descr3);
 }
 
 
@@ -188,6 +205,41 @@ void naive_convolve(int dim, pixel *src, pixel *dst)
  */
 char convolve_descr[] = "convolve: Current working version - gave 2.72";
 void convolve(int dim, pixel *src, pixel *dst) 
+{
+    int i, j, ii, jj, curI, curJ;
+    pixel_sum ps;
+    
+    for (j = 0; j < dim; j++){
+        for (i = 0; i < dim; i++){
+            ps.red    = 0.0;
+            ps.green  = 0.0;
+            ps.blue   = 0.0;
+            ps.weight = 0.0;
+            for (jj = -2; jj <= 2; jj++){
+                for (ii = -2; ii <= 2; ii++){
+                    curJ = j+jj;
+                    if(curJ<0 || curJ>=dim){
+                        continue;
+                    }
+                    curI = i+ii;
+                    if(curI<0 || curI>=dim){
+                        continue;
+                    }
+                    ps.red   += src[RIDX(curI, curJ, dim)].red *   kernel[ii+2][jj+2];
+                    ps.green += src[RIDX(curI, curJ, dim)].green * kernel[ii+2][jj+2];
+                    ps.blue  += src[RIDX(curI, curJ, dim)].blue *  kernel[ii+2][jj+2];
+                    ps.weight += kernel[ii+2][jj+2];
+                }
+            }
+            dst[RIDX(i,j,dim)].red   = (unsigned short)(ps.red/ps.weight);
+            dst[RIDX(i,j,dim)].green = (unsigned short)(ps.green/ps.weight);
+            dst[RIDX(i,j,dim)].blue  = (unsigned short)(ps.blue/ps.weight);
+        }
+    }
+}
+
+char convolve_descr2[] = "convolve: Old readable version - gave 2.72";
+void convolve2(int dim, pixel *src, pixel *dst) 
 {
     int i, j, ii, jj, curI, curJ;
     pixel_sum ps;
@@ -317,7 +369,7 @@ void convolve_Shit(int dim, pixel *src, pixel *dst)
  *********************************************************************/
 
 void register_convolve_functions() {
-    // add_convolve_function(&convolve, convolve_descr);
+    add_convolve_function(&convolve, convolve_descr);
     //add_convolve_function(&naive_convolve, naive_convolve_descr);
     /* ... Register additional test functions here */
 }
