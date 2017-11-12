@@ -240,6 +240,12 @@ typedef struct {
     float weight;
 } pixel_sum;
 
+typedef struct {
+    float red;
+    float green;
+    float blue;
+} pixel_sum2;
+
 /******************************************************
  * Your different versions of the convolve kernel go here
  ******************************************************/
@@ -289,8 +295,8 @@ void naive_convolve(int dim, pixel *src, pixel *dst)
 char convolve_descr[] = "convolve: Current working version";
 void convolve(int dim, pixel *src, pixel *dst) 
 {
-    int i, j, ii, jj, curI, curJ;
-    pixel_sum ps;
+    int i, j, ii, jj;//, curI, curJ;
+    pixel_sum2 ps;
 
     // EDGE CASES
     // Top corners
@@ -690,58 +696,126 @@ void convolve(int dim, pixel *src, pixel *dst)
     
     // Sides
     // column[0]
-    // kWeight = kernel[0][2] + kernel[0][3] + kernel[0][4] +
-    //           kernel[1][2] + kernel[1][3] + kernel[1][4] +
-    //           kernel[2][2] + kernel[2][3] + kernel[2][4] +
-    //           kernel[3][2] + kernel[3][3] + kernel[3][4] +
-    //           kernel[4][2] + kernel[4][3] + kernel[4][4];
-    // for (i = 2; i < dim2; ++i) {
-
-    // }
+    kWeight = kernel[0][2] + kernel[0][3] + kernel[0][4] +
+              kernel[1][2] + kernel[1][3] + kernel[1][4] +
+              kernel[2][2] + kernel[2][3] + kernel[2][4] +
+              kernel[3][2] + kernel[3][3] + kernel[3][4] +
+              kernel[4][2] + kernel[4][3] + kernel[4][4];
+    dimS = dim << 1;
+    for (i = 2; i < dim2; ++i) {
+        ps.red    = 0.0;
+        ps.green  = 0.0;
+        ps.blue   = 0.0;
+        ix = (i-2)*dim - 2;
+        for (ii = 0; ii < 5; ++ii){
+            for (jj = 2; jj < 5; ++jj){
+                ps.red   += src[ix+jj].red *   kernel[ii][jj];
+                ps.green += src[ix+jj].green * kernel[ii][jj];
+                ps.blue  += src[ix+jj].blue *  kernel[ii][jj];
+            }
+            ix += dim;
+        }
+        dst[dimS].red   = ps.red / kWeight;
+        dst[dimS].green = ps.green / kWeight;
+        dst[dimS].blue  = ps.blue / kWeight;
+        dimS += dim;
+    }
     // column[1]
+    kWeight += (kernel[0][1] + kernel[1][1] + kernel[2][1] + kernel[3][1] + kernel[4][1]);
+    dimS = (dim << 1) + 1;
+    for (i = 2; i < dim2; ++i) {
+        ps.red    = 0.0;
+        ps.green  = 0.0;
+        ps.blue   = 0.0;
+        ix = (i-2)*dim - 1;
+        for (ii = 0; ii < 5; ++ii){
+            for (jj = 1; jj < 5; ++jj){
+                ps.red   += src[ix+jj].red *   kernel[ii][jj];
+                ps.green += src[ix+jj].green * kernel[ii][jj];
+                ps.blue  += src[ix+jj].blue *  kernel[ii][jj];
+            }
+            ix += dim;
+        }
+        dst[dimS].red   = ps.red / kWeight;
+        dst[dimS].green = ps.green / kWeight;
+        dst[dimS].blue  = ps.blue / kWeight;
+        dimS += dim;
+    }
     // column[dim-2]
+    kWeight += (kernel[0][1] + kernel[1][1] + kernel[2][1] + kernel[3][1] + kernel[4][1]) -
+               (kernel[0][4] + kernel[1][4] + kernel[2][4] + kernel[3][4] + kernel[4][4]);
+    dimS = (dim << 1) + dim - 2;
+    for (i = 2; i < dim2; ++i) {
+        ps.red    = 0.0;
+        ps.green  = 0.0;
+        ps.blue   = 0.0;
+        ix = (i-2)*dim + dim - 4;
+        for (ii = 0; ii < 5; ++ii){
+            for (jj = 0; jj < 4; ++jj){
+                ps.red   += src[ix+jj].red *   kernel[ii][jj];
+                ps.green += src[ix+jj].green * kernel[ii][jj];
+                ps.blue  += src[ix+jj].blue *  kernel[ii][jj];
+            }
+            ix += dim;
+        }
+        dst[dimS].red   = ps.red / kWeight;
+        dst[dimS].green = ps.green / kWeight;
+        dst[dimS].blue  = ps.blue / kWeight;
+        dimS += dim;
+    }
     // column[dim-1]
+    kWeight -= (kernel[0][3] + kernel[1][3] + kernel[2][3] + kernel[3][3] + kernel[4][3]);
+    dimS = (dim << 1) + dim - 1;
+    for (i = 2; i < dim2; ++i) {
+        ps.red    = 0.0;
+        ps.green  = 0.0;
+        ps.blue   = 0.0;
+        ix = (i-2)*dim + dim - 3;
+        for (ii = 0; ii < 5; ++ii){
+            for (jj = 0; jj < 3; ++jj){
+                ps.red   += src[ix+jj].red *   kernel[ii][jj];
+                ps.green += src[ix+jj].green * kernel[ii][jj];
+                ps.blue  += src[ix+jj].blue *  kernel[ii][jj];
+            }
+            ix += dim;
+        }
+        dst[dimS].red   = ps.red / kWeight;
+        dst[dimS].green = ps.green / kWeight;
+        dst[dimS].blue  = ps.blue / kWeight;
+        dimS += dim;
+    }
 
-    // float kWeight = kernel[0][0] + kernel[0][1] + kernel[0][2] + kernel[0][3] + kernel[0][4] +
-    //                 kernel[1][0] + kernel[1][1] + kernel[1][2] + kernel[1][3] + kernel[1][4] +
-    //                 kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] + kernel[2][4] +
-    //                 kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4] +
-    //                 kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3] + kernel[4][4];
+    // THE MEAT OF CONVOLUTION
+    // Now, this weight doesn't change - so calculate this beforehand
+    kWeight = kernel[0][0] + kernel[0][1] + kernel[0][2] + kernel[0][3] + kernel[0][4] +
+              kernel[1][0] + kernel[1][1] + kernel[1][2] + kernel[1][3] + kernel[1][4] +
+              kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] + kernel[2][4] +
+              kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4] +
+              kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3] + kernel[4][4];
 
+    dimS = dim << 1;
     for (i = 2; i < dim2; ++i){
-        // TODO: Change loop ranges
-        for (j = 0; j < dim; ++j){
+        for (j = 2; j < dim2; ++j){
             ps.red    = 0.0;
             ps.green  = 0.0;
             ps.blue   = 0.0;
-            ps.weight = 0.0; // TODO: remove this and redefine struct
-            // TODO: Change loop ranges
-            for (ii = -2; ii <= 2; ++ii){
-                curI = i+ii; // TODO: Get rid of this?
-                // TODO: Remove conditional
-                if((unsigned)curI >= dim){
-                    continue;
+            ix = (i-2)*dim + j - 2; // Offset for src locations
+            for (ii = 0; ii < 5; ++ii){
+                for (jj = 0; jj < 5; ++jj){
+                    // float kernelWeight = kernel[ii][jj];
+                    ps.red   += src[ix + jj].red *   kernel[ii][jj];
+                    ps.green += src[ix + jj].green * kernel[ii][jj];
+                    ps.blue  += src[ix + jj].blue *  kernel[ii][jj];
                 }
-                // TODO: Change loop range
-                for (jj = -2; jj <= 2; ++jj){
-                    curJ = j+jj; // TODO: Get rid of this?
-                    // TODO: Remove conditonal
-                    if((unsigned)curJ >= dim){
-                        continue;
-                    }
-                    int index = curI*dim + curJ; // TODO: Manually calculate this ?
-                    float kernelWeight = kernel[ii+2][jj+2]; // TODO: Update this
-                    ps.red   += src[index].red *   kernelWeight;
-                    ps.green += src[index].green * kernelWeight;
-                    ps.blue  += src[index].blue *  kernelWeight;
-                    ps.weight += kernelWeight; // TODO: Use constant kWeight
-                }
+                ix += dim;
             }
-            int index = i*dim + j; // TODO: Have a counter to do this?
-            dst[index].red   = (unsigned short)(ps.red/ps.weight);
-            dst[index].green = (unsigned short)(ps.green/ps.weight);
-            dst[index].blue  = (unsigned short)(ps.blue/ps.weight);
+            // Calculate dst location with dimS and j
+            ix = dimS + j;
+            dst[ix].red   = ps.red / kWeight;
+            dst[ix].green = ps.green / kWeight;
+            dst[ix].blue  = ps.blue / kWeight;
         }
+        dimS += dim;
     }
 }
 
