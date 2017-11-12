@@ -49,6 +49,79 @@ void flip(int dim, pixel *src, pixel *dst)
 {
     register int i, j;
     int dimD = dim - 1;
+    int dim2 = dim << 1;
+    int dimHalf = (dim >> 1);
+    int ni = 0;
+    int ni2 = dim;
+    int hi = dimHalf*dim;
+    int hi2 = hi + dim;
+
+    // TODO: Try with just half; only 4 elements; intertwining references
+    for (i = 0; i < dimHalf; i+=2){
+        int pi = ni + dimD;
+        int pi2 = ni2 + dimD;
+        for (j = 0; j < dim; j+=8){
+            int piJ = pi - j;
+            int niJ = ni + j;
+            dst[piJ] = src[niJ];
+            dst[piJ - 1] = src[niJ + 1];
+            dst[piJ - 2] = src[niJ + 2];
+            dst[piJ - 3] = src[niJ + 3];
+            dst[piJ - 4] = src[niJ + 4];
+            dst[piJ - 5] = src[niJ + 5];
+            dst[piJ - 6] = src[niJ + 6];
+            dst[piJ - 7] = src[niJ + 7];
+
+            int piJ2 = pi2 - j;
+            int niJ2 = ni2 + j;
+            dst[piJ2] = src[niJ2];
+            dst[piJ2 - 1] = src[niJ2 + 1];
+            dst[piJ2 - 2] = src[niJ2 + 2];
+            dst[piJ2 - 3] = src[niJ2 + 3];
+            dst[piJ2 - 4] = src[niJ2 + 4];
+            dst[piJ2 - 5] = src[niJ2 + 5];
+            dst[piJ2 - 6] = src[niJ2 + 6];
+            dst[piJ2 - 7] = src[niJ2 + 7];
+        }
+        ni += dim2;
+        ni2 += dim2;
+
+        pi = hi + dimD;
+        pi2 = hi2 + dimD;
+        for(j = 0; j < dim; j+=8) {
+            int piJ = pi - j;
+            int niJ = hi + j;
+            dst[piJ] = src[niJ];
+            dst[piJ - 1] = src[niJ + 1];
+            dst[piJ - 2] = src[niJ + 2];
+            dst[piJ - 3] = src[niJ + 3];
+            dst[piJ - 4] = src[niJ + 4];
+            dst[piJ - 5] = src[niJ + 5];
+            dst[piJ - 6] = src[niJ + 6];
+            dst[piJ - 7] = src[niJ + 7];
+
+            int piJ2 = pi2 - j;
+            int niJ2 = hi2 + j;
+            dst[piJ2] = src[niJ2];
+            dst[piJ2 - 1] = src[niJ2 + 1];
+            dst[piJ2 - 2] = src[niJ2 + 2];
+            dst[piJ2 - 3] = src[niJ2 + 3];
+            dst[piJ2 - 4] = src[niJ2 + 4];
+            dst[piJ2 - 5] = src[niJ2 + 5];
+            dst[piJ2 - 6] = src[niJ2 + 6];
+            dst[piJ2 - 7] = src[niJ2 + 7];
+        }
+        hi += dim2;
+        hi2 += dim2;
+    }
+
+}
+
+char flip_descr2[] = "flip: Pointers - odd and even";
+void flip2(int dim, pixel *src, pixel *dst)
+{
+    register int i, j;
+    int dimD = dim - 1;
     int dim2 = dim << 1; // 2 * dim
     int dim3 = dim2 + dim; // 3 * dim
     register pixel *oddSrc, *oddDst, *evenSrc, *evenDst;
@@ -222,9 +295,9 @@ void convolve(int dim, pixel *src, pixel *dst)
     // EDGE CASES
     // Top corners
     // dst[0] or dst[0][0]
-    float kWeight = kernel[2][2] + kernel[2][3] + kernel[2][4] +
-                    kernel[3][2] + kernel[3][3] + kernel[3][4] +
-                    kernel[4][2] + kernel[4][3] + kernel[4][4];
+    int kWeight = kernel[2][2] + kernel[2][3] + kernel[2][4] +
+                  kernel[3][2] + kernel[3][3] + kernel[3][4] +
+                  kernel[4][2] + kernel[4][3] + kernel[4][4];
     ps.red = 0;
     ps.green = 0;
     ps.blue = 0;
@@ -259,8 +332,8 @@ void convolve(int dim, pixel *src, pixel *dst)
     dst[1].blue = ps.blue / kWeight;
     //dst[dim-2] or dst[0][dim-2]
     kWeight = kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] +
-              kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] +
-              kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3];
+            kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] +
+            kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3];
     ps.red = 0;
     ps.green = 0;
     ps.blue = 0;
@@ -295,9 +368,9 @@ void convolve(int dim, pixel *src, pixel *dst)
     dst[dim-1].blue = ps.blue / kWeight;
     // dst[dim] or dst[dim][0]
     kWeight = kernel[1][2] + kernel[1][3] + kernel[1][4] +
-              kernel[2][2] + kernel[2][3] + kernel[2][4] +
-              kernel[3][2] + kernel[3][3] + kernel[3][4] +
-              kernel[4][2] + kernel[4][3] + kernel[4][4];
+            kernel[2][2] + kernel[2][3] + kernel[2][4] +
+            kernel[3][2] + kernel[3][3] + kernel[3][4] +
+            kernel[4][2] + kernel[4][3] + kernel[4][4];
     ps.red = 0;
     ps.green = 0;
     ps.blue = 0;
@@ -330,12 +403,12 @@ void convolve(int dim, pixel *src, pixel *dst)
     dst[dim+1].red = ps.red / kWeight;
     dst[dim+1].green = ps.green / kWeight;
     dst[dim+1].blue = ps.blue / kWeight;
-    //dst[dim*2 -2] or dst[dim][dim - 2]
+    // dst[dim*2 -2] or dst[dim][dim - 2]
     int dim2 = dim << 1;
     kWeight = kernel[1][0] + kernel[1][1] + kernel[1][2] + kernel[1][3] +
-              kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] +
-              kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] +
-              kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3];
+            kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] +
+            kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] +
+            kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3];
     ps.red = 0;
     ps.green = 0;
     ps.blue = 0;
@@ -351,7 +424,7 @@ void convolve(int dim, pixel *src, pixel *dst)
     dst[dim2-2].red = ps.red / kWeight;
     dst[dim2-2].green = ps.green / kWeight;
     dst[dim2-2].blue = ps.blue / kWeight;
-    //dst[dim*2 -1] or dst[dim][dim - 1]
+    // dst[dim*2 -1] or dst[dim][dim - 1]
     kWeight -= (kernel[1][3] + kernel[2][3] + kernel[3][3] + kernel[4][3]);
     ps.red = 0;
     ps.green = 0;
@@ -372,13 +445,12 @@ void convolve(int dim, pixel *src, pixel *dst)
     // Top Edges
     // row[0]
     kWeight = kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] + kernel[2][4] +
-              kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4] +
-              kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3] + kernel[4][4];
+            kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4] +
+            kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3] + kernel[4][4];
     for (j = 2; j < dim - 2; ++j){
         ps.red    = 0.0;
         ps.green  = 0.0;
         ps.blue   = 0.0;
-        ps.weight = 0.0;
         ix = j - 2;
         for (ii = 2; ii < 5; ++ii){
             for (jj = 0; jj < 5; ++jj){
@@ -398,7 +470,6 @@ void convolve(int dim, pixel *src, pixel *dst)
         ps.red    = 0.0;
         ps.green  = 0.0;
         ps.blue   = 0.0;
-        ps.weight = 0.0;
         ix = j - 2;
         for (ii = 1; ii < 5; ++ii){
             for (jj = 0; jj < 5; ++jj){
@@ -415,20 +486,218 @@ void convolve(int dim, pixel *src, pixel *dst)
 
     // Bottom corners
     // dst[dim-2][0]
+    kWeight = kernel[0][2] + kernel[0][3] + kernel[0][4] +
+              kernel[1][2] + kernel[1][3] + kernel[1][4] +
+              kernel[2][2] + kernel[2][3] + kernel[2][4] +
+              kernel[3][2] + kernel[3][3] + kernel[3][4];
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-4)*dim-2;
+    for (ii = 0; ii < 4; ++ii){
+        for (jj = 2; jj < 5; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*(dim-2);
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-2][1]
+    kWeight += kernel[0][1] + kernel[1][1] + kernel[2][1] + kernel[3][1];
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-4)*dim-1;
+    for (ii = 0; ii < 4; ++ii){
+        for (jj = 1; jj < 5; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*(dim-2) + 1;
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-2][dim-2]
+    kWeight = kernel[0][0] + kernel[0][1] + kernel[0][2] + kernel[0][3] +
+              kernel[1][0] + kernel[1][1] + kernel[1][2] + kernel[1][3] +
+              kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] +
+              kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3];
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-4)*dim + dim - 4;
+    for (ii = 0; ii < 4; ++ii){
+        for (jj = 0; jj < 4; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*(dim-2) + dim - 2;
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-2][dim-1]
+    kWeight -= (kernel[0][3] + kernel[1][3] + kernel[2][3] + kernel[3][3]);
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-4)*dim + dim - 3;
+    for (ii = 0; ii < 4; ++ii){
+        for (jj = 0; jj < 3; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*(dim-2) + dim - 1;
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-1][0]
+    kWeight = kernel[0][2] + kernel[0][3] + kernel[0][4] +
+              kernel[1][2] + kernel[1][3] + kernel[1][4] +
+              kernel[2][2] + kernel[2][3] + kernel[2][4];
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-3)*dim - 2;
+    for (ii = 0; ii < 3; ++ii){
+        for (jj = 2; jj < 5; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*(dim-1);
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-1][1]
+    kWeight += kernel[0][1] + kernel[1][1] + kernel[2][1];
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-3)*dim - 1;
+    for (ii = 0; ii < 3; ++ii){
+        for (jj = 1; jj < 5; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*(dim-1) + 1;
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-1][dim-2]
+    kWeight = kernel[0][0] + kernel[0][1] + kernel[0][2] + kernel[0][3] +
+              kernel[1][0] + kernel[1][1] + kernel[1][2] + kernel[1][3] +
+              kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3];
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-3)*dim + dim - 4;
+    for (ii = 0; ii < 3; ++ii){
+        for (jj = 0; jj < 4; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*dim - 2;
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
     // dst[dim-1][dim-1]
+    kWeight -= (kernel[0][3] + kernel[1][3] + kernel[2][3]);
+    ps.red = 0;
+    ps.green = 0;
+    ps.blue = 0;
+    ix = (dim-3)*dim + dim - 3;
+    for (ii = 0; ii < 3; ++ii){
+        for (jj = 0; jj < 3; ++jj) {
+            ps.red += src[ix+jj].red * kernel[ii][jj];
+            ps.green += src[ix+jj].green * kernel[ii][jj];
+            ps.blue += src[ix+jj].blue * kernel[ii][jj];
+        }
+        ix += dim;
+    }
+    dim2 = dim*dim - 1;
+    dst[dim2].red = ps.red / kWeight;
+    dst[dim2].green = ps.green / kWeight;
+    dst[dim2].blue = ps.blue / kWeight;
 
     // Bottom edges
     // row[dim-2]
+    kWeight = kernel[0][0] + kernel[0][1] + kernel[0][2] + kernel[0][3] + kernel[0][4] +
+              kernel[1][0] + kernel[1][1] + kernel[1][2] + kernel[1][3] + kernel[1][4] +
+              kernel[2][0] + kernel[2][1] + kernel[2][2] + kernel[2][3] + kernel[2][4] +
+              kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4];
+    dim2 = dim-2;
+    int dimS = dim*(dim-2);
+    int dimS2 = dim*(dim-4);
+    for (j = 2; j < dim2; ++j) {
+        ps.red    = 0.0;
+        ps.green  = 0.0;
+        ps.blue   = 0.0;
+        ix = dimS2 + j - 2;
+        for (ii = 0; ii < 4; ++ii){
+            for (jj = 0; jj < 5; ++jj){
+                ps.red   += src[ix+jj].red *   kernel[ii][jj];
+                ps.green += src[ix+jj].green * kernel[ii][jj];
+                ps.blue  += src[ix+jj].blue *  kernel[ii][jj];
+            }
+            ix += dim;
+        }
+        dst[dimS+j].red   = ps.red / kWeight;
+        dst[dimS+j].green = ps.green / kWeight;
+        dst[dimS+j].blue  = ps.blue / kWeight;
+    }
     // row[dim-1]
+    kWeight -= (kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4]);
+    dimS = dim*(dim-1);
+    dimS2 = dim*(dim-3);
+    for (j = 2; j < dim2; ++j) {
+        ps.red    = 0.0;
+        ps.green  = 0.0;
+        ps.blue   = 0.0;
+        ix = dimS2 + j - 2;
+        for (ii = 0; ii < 3; ++ii){
+            for (jj = 0; jj < 5; ++jj){
+                ps.red   += src[ix+jj].red *   kernel[ii][jj];
+                ps.green += src[ix+jj].green * kernel[ii][jj];
+                ps.blue  += src[ix+jj].blue *  kernel[ii][jj];
+            }
+            ix += dim;
+        }
+        dst[dimS+j].red   = ps.red / kWeight;
+        dst[dimS+j].green = ps.green / kWeight;
+        dst[dimS+j].blue  = ps.blue / kWeight;
+    }
     
     // Sides
     // column[0]
+    // kWeight = kernel[0][2] + kernel[0][3] + kernel[0][4] +
+    //           kernel[1][2] + kernel[1][3] + kernel[1][4] +
+    //           kernel[2][2] + kernel[2][3] + kernel[2][4] +
+    //           kernel[3][2] + kernel[3][3] + kernel[3][4] +
+    //           kernel[4][2] + kernel[4][3] + kernel[4][4];
+    // for (i = 2; i < dim2; ++i) {
+
+    // }
     // column[1]
     // column[dim-2]
     // column[dim-1]
@@ -439,15 +708,14 @@ void convolve(int dim, pixel *src, pixel *dst)
     //                 kernel[3][0] + kernel[3][1] + kernel[3][2] + kernel[3][3] + kernel[3][4] +
     //                 kernel[4][0] + kernel[4][1] + kernel[4][2] + kernel[4][3] + kernel[4][4];
 
-    // TODO: Change loop ranges
-    for (i = 2; i < dim; ++i){
+    for (i = 2; i < dim2; ++i){
         // TODO: Change loop ranges
         for (j = 0; j < dim; ++j){
             ps.red    = 0.0;
             ps.green  = 0.0;
             ps.blue   = 0.0;
-            ps.weight = 0.0; // TODO: remove this
-            // TODO: Change loop ranges     
+            ps.weight = 0.0; // TODO: remove this and redefine struct
+            // TODO: Change loop ranges
             for (ii = -2; ii <= 2; ++ii){
                 curI = i+ii; // TODO: Get rid of this?
                 // TODO: Remove conditional
@@ -596,5 +864,6 @@ void register_convolve_functions() {
     add_convolve_function(&convolve, convolve_descr);
     // add_convolve_function(&naive_convolve, naive_convolve_descr);
     /* ... Register additional test functions here */
+    // add_convolve_function(&convolve_Shit, convolve_descr_Shit);
 }
 
