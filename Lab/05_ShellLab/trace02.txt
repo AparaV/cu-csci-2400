@@ -1,0 +1,5 @@
+#
+# trace02.txt - Process builtin exit command.
+#
+exit
+WAIT

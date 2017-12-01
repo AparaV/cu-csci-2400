@@ -1,0 +1,46 @@
+#
+# trace15.txt - Putting it all together
+#
+
+/bin/echo tsh> ./bogus
+./bogus
+
+/bin/echo tsh> ./myspin 10
+./myspin 10
+
+SLEEP 2
+INT
+
+/bin/echo -e tsh> ./myspin 3 \046
+./myspin 3 &
+
+/bin/echo -e tsh> ./myspin 4 \046
+./myspin 4 &
+
+/bin/echo tsh> jobs
+jobs
+
+/bin/echo tsh> fg J1
+fg J1
+
+SLEEP 2
+TSTP
+
+/bin/echo tsh> jobs
+jobs
+
+/bin/echo tsh> bg J3
+bg J3
+
+/bin/echo tsh> bg J1
+bg J1
+
+/bin/echo tsh> jobs
+jobs
+
+/bin/echo tsh> fg J1
+fg J1
+
+/bin/echo tsh> exit
+exit
+
