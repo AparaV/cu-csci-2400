@@ -178,22 +178,43 @@ int main(int argc, char **argv)
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
 // TODO
+// 70 lines
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS];
-    int isBG = parseline(cmdline, argv);
-    int is_bltn = is_builtin_cmd(argv);
-    // TODO: Check if it is to be run in foreground or background
-    if (!is_bltn) {
-        // TODO: Execute the command
+    int bg;
+    int jid;
+    pid_t pid;
+
+    bg = parseline(cmdline, argv);
+    if (argv[0] == NULL) {
+        return;
     }
-    else if (is_bltn == BLTN_EXIT) {
-        do_exit();
+
+    if (!is_builtin_cmd(argv)) {
+        if ((pid = fork()) == 0) {
+            if (execve(argv[0], argv, environ) < 0) {
+                printf("%s: Command not found.\n", argv[0]);
+                exit(0);
+            }
+        }
+
+        if (!bg) {
+            addjob(jobs, pid, FG, cmdline);
+            int status;
+            if (waitpid(pid, &status, 0) < 0) {
+                unix_error("waitfg: waitpid error");
+            }
+            removejob(jobs, pid);   /* Remove FG job once its done */
+        }
+        // TODO: Reap children
+        else {
+            addjob(jobs, pid, BG, cmdline);
+            jid = get_jid_from_pid(pid);
+            printf("[%d] (%d) %s", jid, pid, cmdline);
+        }
     }
-    else if (is_bltn == BLTN_KILLALL) {
-        do_killall(argv);
-    }
-    // TODO: Check for other BLTN commands
+
     return;
 }
 
@@ -260,13 +281,27 @@ int parseline(const char *cmdline, char **argv)
  * return the type of built in command, otherwise indicate that it
  * isn't a built in command
  */
-// TODO
+//10 lines
 int is_builtin_cmd(char **argv)
 {
+    if (strcmp(argv[0], "&") == 0) {
+        do_ignore_singleton();
+        return BLTN_IGNR;
+    }
+    if (strcmp(argv[0], "bg") == 0 || strcmp(argv[0], "fg") == 0) {
+        do_bgfg(argv);
+        return BLTN_BGFG;
+    }
+    if (strcmp(argv[0], "jobs") == 0){
+        do_show_jobs();
+        return BLTN_JOBS;
+    }
     if (strcmp(argv[0], "exit") == 0){
+        do_exit();
         return BLTN_EXIT;
     }
     if (strcmp(argv[0], "killall") == 0){
+        do_killall(argv);
         return BLTN_KILLALL;
     }
     return BLTN_UNK;     /* not a builtin command */
@@ -275,6 +310,7 @@ int is_builtin_cmd(char **argv)
 /*
  * do_exit - Execute the builtin exit command
  */
+// 1 line
 void do_exit(void)
 {
     exit(0);
@@ -283,31 +319,39 @@ void do_exit(void)
 /*
  * do_show_jobs - Execute the builtin jobs command
  */
-// TODO
+// 1 line
 void do_show_jobs(void)
 {
-  return;
+    showjobs(jobs);
 }
 
 /*
  * do_ignore_singleton - Display the message to ignore a singleton '&'
  */
 // TODO
+// 1 line
 void do_ignore_singleton(void)
 {
-  return;
+    return;
 }
 
 // TODO
+// 8 lines
 void do_killall(char **argv)
 {
-  return;
+    if (argv[1] == NULL) {
+        printf("killall command requires a killall timeout\n");
+        return;
+    }
+    unsigned int delay = argv[1][0] - '0';
+    alarm(delay);
 }
 
 /* 
  * do_bgfg - Execute the builtin bg and fg commands
  */
 // TODO
+// 50 lines
 void do_bgfg(char **argv) 
 {
     return;
@@ -317,6 +361,7 @@ void do_bgfg(char **argv)
  * waitfg - Block until process pid is no longer the foreground process
  */
 // TODO
+// 20 lines
 void waitfg(pid_t pid)
 {
     return;
@@ -334,6 +379,7 @@ void waitfg(pid_t pid)
  *     currently running children to terminate.  
  */
 // TODO
+// 80 lines
 void sigchld_handler(int sig) 
 {
     return;
@@ -345,19 +391,39 @@ void sigchld_handler(int sig)
  * EXISTING (pid != 0) job
  */
 // TODO
+// 15 lines
 void sigalrm_handler(int sig)
 {
+    int i;
+    for (i = 0; i < MAXJOBS; ++i) {
+        if (jobs[i].pid != 0) {
+            // Do I need to print the message here and then remove from jobs?
+            printf("Job [%d] (%d) terminated by signal %d\n", jobs[i].jid, jobs[i].pid, SIGINT);
+            // Are the signals being blocked here? Is that causing the delay?
+            kill(-jobs[i].pid, SIGINT);
+            clearjob(&jobs[i]);
+        }
+    }
     return;
 }
 
-/* 
+/*
  * sigint_handler - The kernel sends a SIGINT to the shell whenver the
  *    user types ctrl-c at the keyboard.  Catch it and send it along
- *    to the foreground job.  
+ *    to the foreground job.
  */
 // TODO
+// 15 lines
 void sigint_handler(int sig) 
 {
+    pid_t fg_pid = fgpid(jobs);
+    if (fg_pid) {
+        int fg_jid = get_jid_from_pid(fg_pid);
+        // Do I need to print this message?
+        printf("Job [%d] (%d) terminated by signal %d\n", fg_jid, fg_pid, SIGINT);
+        removejob(jobs, fg_pid);
+        kill(-fg_pid, SIGINT);
+    }
     return;
 }
 
@@ -367,7 +433,8 @@ void sigint_handler(int sig)
  *     foreground job by sending it a SIGTSTP.  
  */
 // TODO
-void sigtstp_handler(int sig) 
+// 15 lines
+void sigtstp_handler(int sig)
 {
     return;
 }
