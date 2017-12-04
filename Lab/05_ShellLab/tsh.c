@@ -193,6 +193,8 @@ void eval(char *cmdline)
 
     if (!is_builtin_cmd(argv)) {
         if ((pid = fork()) == 0) {
+            setpgid(0, 0);
+            // TODO: This also adds the incorrent command's job. Fix it
             if (execve(argv[0], argv, environ) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
@@ -202,13 +204,22 @@ void eval(char *cmdline)
         if (!bg) {
             addjob(jobs, pid, FG, cmdline);
             int status;
-            if (waitpid(pid, &status, 0) < 0) {
+            /* Suspend foreground process until child gets terminated or suspended */
+            if (waitpid(pid, &status, WUNTRACED) < 0) {
                 unix_error("waitfg: waitpid error");
             }
-            removejob(jobs, pid);   /* Remove FG job once its done */
+            /* Remove FG job only if it terminated */
+            if (!WIFSTOPPED(status)) {
+                removejob(jobs, pid);
+            }
         }
         // TODO: Reap children
         else {
+            int status;
+            // TODO: This needs to run in a polling style for reaping child. Use signals instead
+            if (waitpid(pid, &status, WNOHANG) < 0) {
+                unix_error("waitbg: waitpid error");
+            }
             addjob(jobs, pid, BG, cmdline);
             jid = get_jid_from_pid(pid);
             printf("[%d] (%d) %s", jid, pid, cmdline);
@@ -419,10 +430,10 @@ void sigint_handler(int sig)
     pid_t fg_pid = fgpid(jobs);
     if (fg_pid) {
         int fg_jid = get_jid_from_pid(fg_pid);
+        kill(-fg_pid, SIGINT);
         // Do I need to print this message?
         printf("Job [%d] (%d) terminated by signal %d\n", fg_jid, fg_pid, SIGINT);
         removejob(jobs, fg_pid);
-        kill(-fg_pid, SIGINT);
     }
     return;
 }
@@ -435,7 +446,21 @@ void sigint_handler(int sig)
 // TODO
 // 15 lines
 void sigtstp_handler(int sig)
-{
+{   
+    int i;
+    pid_t fg_pid = fgpid(jobs);
+    if (fg_pid) {
+        kill(-fg_pid, SIGTSTP);
+        int fg_jid = get_jid_from_pid(fg_pid);
+        // Do I need to print this message?
+        printf("Job [%d] (%d) stopped by signal %d\n", fg_jid, fg_pid, SIGTSTP);
+        for (i = 0; i < MAXJOBS; ++i) {
+            if (jobs[i].pid == fg_pid) {
+                jobs[i].state = ST;
+                break;
+            }
+        }
+    }
     return;
 }
 
