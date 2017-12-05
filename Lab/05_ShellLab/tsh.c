@@ -57,6 +57,8 @@ struct job_t {              /* The job struct */
     char cmdline[MAXLINE];  /* command line */
 };
 struct job_t jobs[MAXJOBS]; /* The job list */
+
+sigset_t mask;
 /* End global variables */
 
 
@@ -192,8 +194,12 @@ void eval(char *cmdline)
     }
 
     if (!is_builtin_cmd(argv)) {
+
+        sigaddset(&mask, SIGCHLD);
+        sigprocmask(SIG_BLOCK, &mask, NULL);
         if ((pid = fork()) == 0) {
             setpgid(0, 0);
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);           
             // TODO: This also adds the incorrent command's job. Fix it
             if (execve(argv[0], argv, environ) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
@@ -203,6 +209,7 @@ void eval(char *cmdline)
 
         if (!bg) {
             addjob(jobs, pid, FG, cmdline);
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
             int status;
             /* Suspend foreground process until child gets terminated or suspended */
             if (waitpid(pid, &status, WUNTRACED) < 0) {
@@ -221,6 +228,7 @@ void eval(char *cmdline)
                 unix_error("waitbg: waitpid error");
             }
             addjob(jobs, pid, BG, cmdline);
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
             jid = get_jid_from_pid(pid);
             printf("[%d] (%d) %s", jid, pid, cmdline);
         }
@@ -339,14 +347,12 @@ void do_show_jobs(void)
 /*
  * do_ignore_singleton - Display the message to ignore a singleton '&'
  */
-// TODO
 // 1 line
 void do_ignore_singleton(void)
 {
     return;
 }
 
-// TODO
 // 8 lines
 void do_killall(char **argv)
 {
@@ -354,17 +360,60 @@ void do_killall(char **argv)
         printf("killall command requires a killall timeout\n");
         return;
     }
-    unsigned int delay = argv[1][0] - '0';
+    unsigned int delay = atoi(argv[1]);
     alarm(delay);
 }
 
 /* 
  * do_bgfg - Execute the builtin bg and fg commands
  */
-// TODO
 // 50 lines
 void do_bgfg(char **argv) 
 {
+    if (argv[1] == NULL) {
+        printf("%s command requires PID or Jjobid argument\n", argv[0]);
+        return;
+    }
+    int bg;
+    struct job_t *ex_job;
+    if (argv[1][0] == 'J') { /* If argument starts with 'J', then jobid*/
+        int jid = atoi(argv[1] + 1);
+        ex_job = getjobid(jobs, jid);
+        if (ex_job == NULL) {
+            printf("%s: No such job\n", argv[1]);
+            return;
+        }
+    }
+    else if (isdigit(argv[1][0])){ /* If agrument starts with a digit, then pid */
+        int pid = atoi(argv[1]);
+        ex_job = getprocessid(jobs, pid);
+        if (ex_job == NULL) {
+            printf("(%s): No such process\n", argv[1]);
+            return;
+        }
+    }
+    else { /* Incorrect argument otherwise */
+        printf("%s: argument must be a PID or Jjobid\n", argv[0]);
+        return;
+    }
+    bg = !strcmp(argv[0], "bg");
+    kill(-ex_job->pid, SIGCONT);
+    if (bg) {
+        ex_job->state = BG;
+        printf("[%d] (%d) %s", ex_job->jid, ex_job->pid, ex_job->cmdline);
+    }
+    else {
+        ex_job->state = FG;
+        int status;
+        /* Suspend foreground process until child gets terminated or suspended */
+        if (waitpid(ex_job->pid, &status, WUNTRACED) < 0) {
+            unix_error("waitfg: waitpid error");
+        }
+        /* Remove FG job only if it terminated */
+        if (!WIFSTOPPED(status)) {
+            removejob(jobs, ex_job->pid);
+        }
+    }
     return;
 }
 
@@ -401,7 +450,6 @@ void sigchld_handler(int sig)
  * alarm(timeout) times out. Catch it and send a SIGINT to every
  * EXISTING (pid != 0) job
  */
-// TODO
 // 15 lines
 void sigalrm_handler(int sig)
 {
@@ -410,7 +458,6 @@ void sigalrm_handler(int sig)
         if (jobs[i].pid != 0) {
             // Do I need to print the message here and then remove from jobs?
             printf("Job [%d] (%d) terminated by signal %d\n", jobs[i].jid, jobs[i].pid, SIGINT);
-            // Are the signals being blocked here? Is that causing the delay?
             kill(-jobs[i].pid, SIGINT);
             clearjob(&jobs[i]);
         }
