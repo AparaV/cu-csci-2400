@@ -210,15 +210,7 @@ void eval(char *cmdline)
         if (!bg) {
             addjob(jobs, pid, FG, cmdline);
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
-            int status;
-            /* Suspend foreground process until child gets terminated or suspended */
-            if (waitpid(pid, &status, WUNTRACED) < 0) {
-                unix_error("waitfg: waitpid error");
-            }
-            /* Remove FG job only if it terminated */
-            if (!WIFSTOPPED(status)) {
-                removejob(jobs, pid);
-            }
+            waitfg(pid);
         }
         // TODO: Reap children
         else {
@@ -360,6 +352,10 @@ void do_killall(char **argv)
         printf("killall command requires a killall timeout\n");
         return;
     }
+    if (!isdigit(argv[1][0])) {
+        printf("%s is not an integer argument\n", argv[1]);
+        return;
+    }
     unsigned int delay = atoi(argv[1]);
     alarm(delay);
 }
@@ -424,6 +420,15 @@ void do_bgfg(char **argv)
 // 20 lines
 void waitfg(pid_t pid)
 {
+    pid_t fg_pid;
+    while (1) {
+        fg_pid = fgpid(jobs);
+        if (!fg_pid) {
+            break;
+        }
+        sleep(1);
+    }
+
     return;
 }
 
@@ -442,6 +447,35 @@ void waitfg(pid_t pid)
 // 80 lines
 void sigchld_handler(int sig) 
 {
+    int status;
+    int uncaught_signal;
+    int jid;
+    pid_t pid;
+    struct job_t *curr_job = NULL;
+    while ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
+        /* Terminated via call to exit or return */
+        if (WIFEXITED(status)) {
+            removejob(jobs, pid);
+        }
+        /* Terminated via uncaught signal */
+        else if (WIFSIGNALED(status)) {
+            uncaught_signal = WTERMSIG(status);
+            jid = get_jid_from_pid(pid);
+            printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, uncaught_signal);
+            removejob(jobs, pid);
+        }
+        /* Process stopped */
+        else if (WIFSTOPPED(status)) {
+            uncaught_signal = WSTOPSIG(status);
+            curr_job = getprocessid(jobs, pid);
+            curr_job->state = ST;
+            printf("Job [%d] (%d) stopped by signal %d\n", curr_job->jid, pid, uncaught_signal);
+        }
+    }
+    if (pid < 0 && errno != ECHILD) {
+        unix_error("sigchld_handler: waitpid error");
+    }
+    
     return;
 }
 
@@ -457,9 +491,10 @@ void sigalrm_handler(int sig)
     for (i = 0; i < MAXJOBS; ++i) {
         if (jobs[i].pid != 0) {
             // Do I need to print the message here and then remove from jobs?
-            printf("Job [%d] (%d) terminated by signal %d\n", jobs[i].jid, jobs[i].pid, SIGINT);
+            //printf("Job [%d] (%d) terminated by signal %d\n", jobs[i].jid, jobs[i].pid, SIGINT);
+            printf("Killing process (%d)\n", jobs[i].pid);
             kill(-jobs[i].pid, SIGINT);
-            clearjob(&jobs[i]);
+            //clearjob(&jobs[i]);
         }
     }
     return;
@@ -474,13 +509,10 @@ void sigalrm_handler(int sig)
 // 15 lines
 void sigint_handler(int sig) 
 {
-    pid_t fg_pid = fgpid(jobs);
+    pid_t fg_pid, pid;
+    fg_pid = fgpid(jobs);
     if (fg_pid) {
-        int fg_jid = get_jid_from_pid(fg_pid);
         kill(-fg_pid, SIGINT);
-        // Do I need to print this message?
-        printf("Job [%d] (%d) terminated by signal %d\n", fg_jid, fg_pid, SIGINT);
-        removejob(jobs, fg_pid);
     }
     return;
 }
@@ -493,20 +525,10 @@ void sigint_handler(int sig)
 // TODO
 // 15 lines
 void sigtstp_handler(int sig)
-{   
-    int i;
+{
     pid_t fg_pid = fgpid(jobs);
     if (fg_pid) {
         kill(-fg_pid, SIGTSTP);
-        int fg_jid = get_jid_from_pid(fg_pid);
-        // Do I need to print this message?
-        printf("Job [%d] (%d) stopped by signal %d\n", fg_jid, fg_pid, SIGTSTP);
-        for (i = 0; i < MAXJOBS; ++i) {
-            if (jobs[i].pid == fg_pid) {
-                jobs[i].state = ST;
-                break;
-            }
-        }
     }
     return;
 }
