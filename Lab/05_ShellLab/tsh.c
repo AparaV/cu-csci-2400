@@ -179,8 +179,6 @@ int main(int argc, char **argv)
  * background children don't receive SIGINT (SIGTSTP) from the kernel
  * when we type ctrl-c (ctrl-z) at the keyboard.  
 */
-// TODO
-// 70 lines
 void eval(char *cmdline) 
 {
     char *argv[MAXARGS];
@@ -189,18 +187,25 @@ void eval(char *cmdline)
     pid_t pid;
 
     bg = parseline(cmdline, argv);
+
+    /* Ignore singleton '&' */
     if (argv[0] == NULL) {
         return;
     }
 
+    /* Execute non-builtin commands */
     if (!is_builtin_cmd(argv)) {
 
+        /* Block SIGCHLD from children until we add the process to our jobs */
         sigaddset(&mask, SIGCHLD);
         sigprocmask(SIG_BLOCK, &mask, NULL);
+
         if ((pid = fork()) == 0) {
+            /* Put process in its our process group */
             setpgid(0, 0);
-            sigprocmask(SIG_UNBLOCK, &mask, NULL);           
-            // TODO: This also adds the incorrent command's job. Fix it
+            /* Unblock SIGCHLD */
+            sigprocmask(SIG_UNBLOCK, &mask, NULL);
+            /* Execute command and handle errors */        
             if (execve(argv[0], argv, environ) < 0) {
                 printf("%s: Command not found.\n", argv[0]);
                 exit(0);
@@ -208,11 +213,13 @@ void eval(char *cmdline)
         }
 
         if (!bg) {
+            /* Add job, unblock SIGCHLD and wait from process to complete */
             addjob(jobs, pid, FG, cmdline);
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
             waitfg(pid);
         }
         else {
+            /* Add job, unblock SIGCHLD and issue prompt again */
             addjob(jobs, pid, BG, cmdline);
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
             jid = get_jid_from_pid(pid);
@@ -286,36 +293,34 @@ int parseline(const char *cmdline, char **argv)
  * return the type of built in command, otherwise indicate that it
  * isn't a built in command
  */
-//10 lines
 int is_builtin_cmd(char **argv)
 {
-    if (strcmp(argv[0], "&") == 0) {
+    if (strcmp(argv[0], "&") == 0) {                                 /* Ignore singleton '&'      */
         do_ignore_singleton();
         return BLTN_IGNR;
     }
-    if (strcmp(argv[0], "bg") == 0 || strcmp(argv[0], "fg") == 0) {
+    if (strcmp(argv[0], "bg") == 0 || strcmp(argv[0], "fg") == 0) {  /* Handle bg and fg commands */
         do_bgfg(argv);
         return BLTN_BGFG;
     }
-    if (strcmp(argv[0], "jobs") == 0){
+    if (strcmp(argv[0], "jobs") == 0){                               /* Handle jobs command       */
         do_show_jobs();
         return BLTN_JOBS;
     }
-    if (strcmp(argv[0], "exit") == 0){
+    if (strcmp(argv[0], "exit") == 0){                               /* Handle exit command       */
         do_exit();
         return BLTN_EXIT;
     }
-    if (strcmp(argv[0], "killall") == 0){
+    if (strcmp(argv[0], "killall") == 0){                            /* Handle killall command    */
         do_killall(argv);
         return BLTN_KILLALL;
     }
-    return BLTN_UNK;     /* not a builtin command */
+    return BLTN_UNK;                                                 /* Not a builtin command     */
 }
 
 /*
  * do_exit - Execute the builtin exit command
  */
-// 1 line
 void do_exit(void)
 {
     exit(0);
@@ -324,7 +329,6 @@ void do_exit(void)
 /*
  * do_show_jobs - Execute the builtin jobs command
  */
-// 1 line
 void do_show_jobs(void)
 {
     showjobs(jobs);
@@ -333,15 +337,14 @@ void do_show_jobs(void)
 /*
  * do_ignore_singleton - Display the message to ignore a singleton '&'
  */
-// 1 line
 void do_ignore_singleton(void)
 {
     return;
 }
 
-// 8 lines
 void do_killall(char **argv)
-{
+{   
+    /* Handle incorrect arguments */
     if (argv[1] == NULL) {
         printf("killall command requires a killall timeout\n");
         return;
@@ -350,6 +353,7 @@ void do_killall(char **argv)
         printf("%s is not an integer argument\n", argv[1]);
         return;
     }
+    /* Set alarm */
     unsigned int delay = atoi(argv[1]);
     alarm(delay);
 }
@@ -357,60 +361,72 @@ void do_killall(char **argv)
 /* 
  * do_bgfg - Execute the builtin bg and fg commands
  */
-// 50 lines
 void do_bgfg(char **argv) 
-{
+{   
+    /* Handle incorrect arguments */
     if (argv[1] == NULL) {
         printf("%s command requires PID or Jjobid argument\n", argv[0]);
         return;
     }
+
     int bg;
     struct job_t *ex_job;
-    if (argv[1][0] == 'J') { /* If argument starts with 'J', then jobid*/
+    
+    /* If argument starts with 'J', then get job from jobid */
+    if (argv[1][0] == 'J') {
         int jid = atoi(argv[1] + 1);
         ex_job = getjobid(jobs, jid);
+        /* Handle incorrect job id */
         if (ex_job == NULL) {
             printf("%s: No such job\n", argv[1]);
             return;
         }
     }
-    else if (isdigit(argv[1][0])){ /* If agrument starts with a digit, then pid */
+    /* If agrument starts with a digit, then pid */
+    else if (isdigit(argv[1][0])){
         int pid = atoi(argv[1]);
         ex_job = getprocessid(jobs, pid);
+        /* Handle incorrent process id*/
         if (ex_job == NULL) {
             printf("(%s): No such process\n", argv[1]);
             return;
         }
     }
-    else { /* Incorrect argument otherwise */
+    /* Handle all other incorrect arguments */
+    else {
         printf("%s: argument must be a PID or Jjobid\n", argv[0]);
         return;
     }
 
+    /* Continue executing the corresponding job */
     bg = !strcmp(argv[0], "bg");
     kill(-ex_job->pid, SIGCONT);
+    /* If 'bg' then continue running and issue prompt */
     if (bg) {
         ex_job->state = BG;
         printf("[%d] (%d) %s", ex_job->jid, ex_job->pid, ex_job->cmdline);
     }
+    /* If 'fg' then wait for process to complete */
     else {
         ex_job->state = FG;
         waitfg(ex_job->pid);
     }
+
     return;
 }
 
 /* 
  * waitfg - Block until process pid is no longer the foreground process
  */
-// TODO
-// 20 lines
 void waitfg(pid_t pid)
 {
+    /* Handle edge cases */
     pid_t fg_pid = fgpid(jobs);
     if (pid == 0 || fg_pid != pid) {
         return;
     }
+
+    /* Busy loop that checks if foreground process is complete every 1 second */
     while (1) {
         fg_pid = fgpid(jobs);
         if (!fg_pid) {
@@ -433,8 +449,6 @@ void waitfg(pid_t pid)
  *     available zombie children, but doesn't wait for any other
  *     currently running children to terminate.  
  */
-// TODO
-// 80 lines
 void sigchld_handler(int sig) 
 {
     int status;
@@ -442,19 +456,21 @@ void sigchld_handler(int sig)
     int jid;
     pid_t pid;
     struct job_t *curr_job = NULL;
+
+    /* Reap terminated processes and handle stopped processes */
     while ((pid = waitpid(-1, &status, WNOHANG|WUNTRACED)) > 0) {
-        /* Terminated via call to exit or return */
+        /* Reap terminated process via call to exit or return */
         if (WIFEXITED(status)) {
             removejob(jobs, pid);
         }
-        /* Terminated via uncaught signal */
+        /* Reap terminated process via uncaught signal */
         else if (WIFSIGNALED(status)) {
             uncaught_signal = WTERMSIG(status);
             jid = get_jid_from_pid(pid);
             printf("Job [%d] (%d) terminated by signal %d\n", jid, pid, uncaught_signal);
             removejob(jobs, pid);
         }
-        /* Process stopped */
+        /* Handle stopped process */
         else if (WIFSTOPPED(status)) {
             uncaught_signal = WSTOPSIG(status);
             curr_job = getprocessid(jobs, pid);
@@ -462,6 +478,8 @@ void sigchld_handler(int sig)
             printf("Job [%d] (%d) stopped by signal %d\n", curr_job->jid, pid, uncaught_signal);
         }
     }
+
+    /* Print any error messages */
     if (pid < 0 && errno != ECHILD) {
         unix_error("sigchld_handler: waitpid error");
     }
@@ -474,18 +492,17 @@ void sigchld_handler(int sig)
  * alarm(timeout) times out. Catch it and send a SIGINT to every
  * EXISTING (pid != 0) job
  */
-// 15 lines
 void sigalrm_handler(int sig)
 {
     int i;
+
+    /* Send SIGINT to every single process */
     for (i = 0; i < MAXJOBS; ++i) {
         if (jobs[i].pid != 0) {
-            // Do I need to print the message here and then remove from jobs?
-            //printf("Job [%d] (%d) terminated by signal %d\n", jobs[i].jid, jobs[i].pid, SIGINT);
             kill(-jobs[i].pid, SIGINT);
-            //clearjob(&jobs[i]);
         }
     }
+
     return;
 }
 
@@ -494,15 +511,16 @@ void sigalrm_handler(int sig)
  *    user types ctrl-c at the keyboard.  Catch it and send it along
  *    to the foreground job.
  */
-// TODO
-// 15 lines
 void sigint_handler(int sig) 
 {
     pid_t fg_pid;
     fg_pid = fgpid(jobs);
+
+    /* Send SIGINT if process is running in the foreground */
     if (fg_pid) {
         kill(-fg_pid, SIGINT);
     }
+
     return;
 }
 
@@ -511,11 +529,11 @@ void sigint_handler(int sig)
  *     the user types ctrl-z at the keyboard. Catch it and suspend the
  *     foreground job by sending it a SIGTSTP.  
  */
-// TODO
-// 15 lines
 void sigtstp_handler(int sig)
 {
     pid_t fg_pid = fgpid(jobs);
+
+    /* Send SIGTSTP to foreground process */
     if (fg_pid) {
         kill(-fg_pid, SIGTSTP);
     }
