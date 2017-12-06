@@ -212,13 +212,7 @@ void eval(char *cmdline)
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
             waitfg(pid);
         }
-        // TODO: Reap children
         else {
-            int status;
-            // TODO: This needs to run in a polling style for reaping child. Use signals instead
-            if (waitpid(pid, &status, WNOHANG) < 0) {
-                unix_error("waitbg: waitpid error");
-            }
             addjob(jobs, pid, BG, cmdline);
             sigprocmask(SIG_UNBLOCK, &mask, NULL);
             jid = get_jid_from_pid(pid);
@@ -392,6 +386,7 @@ void do_bgfg(char **argv)
         printf("%s: argument must be a PID or Jjobid\n", argv[0]);
         return;
     }
+
     bg = !strcmp(argv[0], "bg");
     kill(-ex_job->pid, SIGCONT);
     if (bg) {
@@ -400,15 +395,7 @@ void do_bgfg(char **argv)
     }
     else {
         ex_job->state = FG;
-        int status;
-        /* Suspend foreground process until child gets terminated or suspended */
-        if (waitpid(ex_job->pid, &status, WUNTRACED) < 0) {
-            unix_error("waitfg: waitpid error");
-        }
-        /* Remove FG job only if it terminated */
-        if (!WIFSTOPPED(status)) {
-            removejob(jobs, ex_job->pid);
-        }
+        waitfg(ex_job->pid);
     }
     return;
 }
@@ -420,7 +407,10 @@ void do_bgfg(char **argv)
 // 20 lines
 void waitfg(pid_t pid)
 {
-    pid_t fg_pid;
+    pid_t fg_pid = fgpid(jobs);
+    if (pid == 0 || fg_pid != pid) {
+        return;
+    }
     while (1) {
         fg_pid = fgpid(jobs);
         if (!fg_pid) {
@@ -492,7 +482,6 @@ void sigalrm_handler(int sig)
         if (jobs[i].pid != 0) {
             // Do I need to print the message here and then remove from jobs?
             //printf("Job [%d] (%d) terminated by signal %d\n", jobs[i].jid, jobs[i].pid, SIGINT);
-            printf("Killing process (%d)\n", jobs[i].pid);
             kill(-jobs[i].pid, SIGINT);
             //clearjob(&jobs[i]);
         }
@@ -509,7 +498,7 @@ void sigalrm_handler(int sig)
 // 15 lines
 void sigint_handler(int sig) 
 {
-    pid_t fg_pid, pid;
+    pid_t fg_pid;
     fg_pid = fgpid(jobs);
     if (fg_pid) {
         kill(-fg_pid, SIGINT);
